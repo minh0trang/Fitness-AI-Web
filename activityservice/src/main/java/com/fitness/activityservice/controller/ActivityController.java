@@ -4,16 +4,17 @@ import com.fitness.activityservice.dto.ActivityResponse;
 import com.fitness.activityservice.dto.ActivityResquest;
 import com.fitness.activityservice.service.ActivityService;
 import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/activities")
-@AllArgsConstructor
 public class ActivityController {
-    private ActivityService activityService;
+    private final ActivityService activityService;
     @PostMapping
     public ResponseEntity<ActivityResponse> trackActivity(
             @RequestBody ActivityResquest resquest

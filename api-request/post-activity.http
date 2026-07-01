@@ -3,7 +3,7 @@ Content-Type: application/json
 
 {
   "userId": "69a409cc-5099-4af1-8af1-acd3b7bb54bf",
-  "type": "RUNNING",
+  "type": "SWIMMING",
   "duration": 30,
   "caloriesBurned": 300,
   "startTime": "2026-06-01T10:00:00Z",

@@ -1,14 +1,5 @@
 spring:
   application:
     name: activity-service
-  data:
-    mongodb:
-      uri: ${MONGO_URI}
-      database: ${MONGO_DATABASE}
-
-eureka:
-  client:
-    service-url:
-      defaultZone: http://localhost:8761/eureka/
-server:
-  port: 8082
+  config:
+    import: optional:configserver:http://localhost:8888
