@@ -2,6 +2,7 @@ package com.fitness.userservice.dto;
 
 import com.fitness.userservice.model.UserRole;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -12,6 +13,7 @@ import java.time.LocalDateTime;
 public class UserResponse {
     private String id;
     private String email;
+    private String keycloackId;
     private String password;
     private String firstname;
     private String lastname;

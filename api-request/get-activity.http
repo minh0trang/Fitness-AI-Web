@@ -1,1 +1,2 @@
 GET http://localhost:8080/api/activities/6a43d65858d5e9ed5d76999a
+Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJ0OXhWNTN1S0o5ZFdWSFNFMEhZcU81RXBqUVdIUDZoQjBiU2UzcjU4a2M4In0

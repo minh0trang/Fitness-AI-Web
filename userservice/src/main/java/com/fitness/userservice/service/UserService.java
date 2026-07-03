@@ -17,17 +17,29 @@ public class UserService {
     public UserResponse register(@Valid RegisterRequest request) {
 
         if(userRepository.existsByEmail(request.getEmail())){
-            throw new RuntimeException("Email already exists");
+            User existingUser=userRepository.findByEmail(request.getEmail());
+            UserResponse userResponse=new UserResponse();
+            userResponse.setId(existingUser.getId());
+            userResponse.setKeycloackId(existingUser.getKeycloackId());
+            userResponse.setEmail(existingUser.getEmail());
+            userResponse.setFirstname(existingUser.getFirstname());
+            userResponse.setLastname(existingUser.getLastname());
+            userResponse.setPassword(existingUser.getPassword());
+            userResponse.setCreatedAt(existingUser.getCreatedAt());
+            userResponse.setUpdatedAt(existingUser.getUpdatedAt());
+            return userResponse;
         }
         User user = new User();
-        user.setFirstname(request.getFirstname());
-        user.setLastname(request.getLastname());
+        user.setFirstname(request.getFirstName());
+        user.setLastname(request.getLastName());
+        user.setKeycloackId(request.getKeycloakId());
         user.setPassword(request.getPassword());
         user.setEmail(request.getEmail());
 
         User saveUser=userRepository.save(user);
         UserResponse userResponse=new UserResponse();
         userResponse.setId(saveUser.getId());
+        userResponse.setKeycloackId(saveUser.getKeycloackId());
         userResponse.setEmail(saveUser.getEmail());
         userResponse.setFirstname(saveUser.getFirstname());
         userResponse.setLastname(saveUser.getLastname());
@@ -52,6 +64,6 @@ public class UserService {
 
     public Boolean existByUserId(String userId) {
         log.info("Calling User Validation API for a userID: " + userId);
-        return userRepository.existsById(userId);
+        return userRepository.existsByKeycloackId(userId);
     }
 }
