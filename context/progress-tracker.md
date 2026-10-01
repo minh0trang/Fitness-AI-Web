@@ -105,11 +105,13 @@
     - Standardized Service boundaries: `userservice` (PostgreSQL), `activityservice` (MongoDB), `aiservice` (MongoDB).
     - Designed core adaptive loop: `Profile` + `WeeklyHistorySummary` (7 days aggregated metrics) ➔ `AIService` ➔ `WeeklyPlan` ➔ `Workout` ➔ `WorkoutJournal` (with `plannedDuration`, `plannedIntensity`, `energy` 1-5) ➔ Next Cycle.
     - Decoupled `AiPlanGeneration` (audit log of weekly plan generation) from `recommendations` (short post-workout coaching advice).
-    - Specified key DTOs: `WeeklyHistorySummary`, `AiGeneratePlanRequest`, `WorkoutJournalRequest`, `MonthlyProgressResponse`.
+  - **Feature Spec 03: F02 — WeeklyPlan Domain ([context/spec_features/03-weekly-plan-domain.md](file:///d:/Fitness-AI-Web/context/spec_features/03-weekly-plan-domain.md))**:
+    - Finalized 4 core principles: Create ≠ Apply (Preview vs Active), Immutable Active Plans, Copy-on-Reuse, Dynamic 7-day mid-week onboarding boundary.
+    - Specified full lifecycle, dynamic status derivation, MongoDB schema, and 5 core endpoints.
 
 ## In Progress
 
-- Connecting frontend Weekly Check-in flow to backend AI Gemini plan generation based on the active UI flow.
+- **F02 — WeeklyPlan Domain**: Implementing domain models (`WeeklyPlan`, `WorkoutDay`, `WorkoutExercise`), MongoDB repository, service logic (Preview, Apply, Copy-as-New), and automated testing in `activityservice`.
 
 ## Next Up
 
