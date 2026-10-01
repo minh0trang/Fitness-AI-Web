@@ -59,6 +59,7 @@ Collection: **`workout_journals`** (MongoDB)
 
 * **Ràng buộc Plan**: `planId` bắt buộc phải tồn tại trong collection `weekly_plans`.
 * **Ràng buộc Ngày**: `dayIndex` bắt buộc từ 1 đến 7.
+* **Ràng buộc Scheduled Day**: Chỉ cho phép ghi nhật ký cho ngày tập theo lịch (`isRestDay == false`). Từ chối ghi nhật ký cho ngày nghỉ phục hồi (`isRestDay == true`).
 * **Thang điểm RPE & Vitality**:
   * `difficulty`: Bắt buộc nguyên từ 1 đến 5 (1-Dễ thở -> 5-Kiệt sức).
   * `energy`: Bắt buộc nguyên từ 1 đến 5 (1-Kiệt sức -> 5-Bùng nổ).

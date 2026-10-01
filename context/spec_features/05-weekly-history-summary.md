@@ -29,9 +29,10 @@ DTO này được sử dụng trực tiếp làm đầu vào `previousWeekSummar
 * `completedDays` = Số lượng bản ghi `WorkoutJournal` tương ứng với các ngày có lịch tập (`isRestDay == false`) trong plan.
 * Một `WorkoutJournal` tồn tại cho ngày scheduled đồng nghĩa ngày đó **chắc chắn đã hoàn thành**.
 
-### 2.4. Không có Journal cho Rest Day
-* Rest Day thuần túy là ngày nghỉ phục hồi, không có bài tập và không tạo Journal.
-* Mọi tính toán tập trung 100% vào các ngày scheduled (`isRestDay == false`).
+### 2.4. Ràng buộc Scheduled Day (Không tạo Journal cho Rest Day)
+* **Quy tắc thống nhất toàn hệ thống**: Một `WorkoutJournal` **chỉ được phép tạo cho Scheduled Day (`isRestDay == false`)**.
+* Rest Day thuần túy là ngày nghỉ phục hồi, không có bài tập và hệ thống chặn (từ chối) tạo Journal cho ngày nghỉ.
+* Nhờ đó, 100% bản ghi `WorkoutJournal` trong database luôn tương ứng với một buổi tập có lịch. Mọi phép tính toán tổng hợp chỉ tập trung vào các ngày scheduled.
 
 ### 2.5. Cách tính `targetMinutes`
 * Chỉ cộng dồn `totalMinutes` của các ngày scheduled (`isRestDay == false`) trong plan.
