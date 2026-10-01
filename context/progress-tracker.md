@@ -99,8 +99,13 @@
         - **Khảo sát chấn thương & Đau mỏi**: Status indicator and pain area tags (Khớp gối, Lưng dưới, Cổ chân, etc.).
         - **Ảnh Check-in**: Visual photo preview card if user uploaded progress photos.
         - **Nhật ký cá nhân**: User notes formatted in an elegant quote block.
-        - **Gợi ý từ AI Coach**: Recovery and encouragement advice banner.
+        - Gợi ý từ AI Coach: Recovery and encouragement advice banner.
         - Scrollable dialog body with styled slim scrollbar and full responsive layout.
+  - **Database Architecture & Data Models Specification ([context/database-design.md](file:///d:/Fitness-AI-Web/context/database-design.md))**:
+    - Standardized Service boundaries: `userservice` (PostgreSQL), `activityservice` (MongoDB), `aiservice` (MongoDB).
+    - Designed core adaptive loop: `Profile` + `WeeklyHistorySummary` (7 days aggregated metrics) ➔ `AIService` ➔ `WeeklyPlan` ➔ `Workout` ➔ `WorkoutJournal` (with `plannedDuration`, `plannedIntensity`, `energy` 1-5) ➔ Next Cycle.
+    - Decoupled `AiPlanGeneration` (audit log of weekly plan generation) from `recommendations` (short post-workout coaching advice).
+    - Specified key DTOs: `WeeklyHistorySummary`, `AiGeneratePlanRequest`, `WorkoutJournalRequest`, `MonthlyProgressResponse`.
 
 ## In Progress
 
