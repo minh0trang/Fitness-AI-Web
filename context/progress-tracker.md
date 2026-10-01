@@ -131,13 +131,23 @@
       - [WorkoutJournalControllerTest.java](file:///d:/Fitness-AI-Web/activityservice/src/test/java/com/fitness/activityservice/controller/WorkoutJournalControllerTest.java): 4 WebMvc MockMvc tests verifying `POST`, `GET /{journalId}`, `GET /plan/{planId}`, and `GET` (user journals) with `X-User-ID` security.
       - Total `activityservice` tests: **21/21 passed**.
 
+  - **Feature Spec 05: F04 — WeeklyHistorySummary ([context/spec_features/05-weekly-history-summary.md](file:///d:/Fitness-AI-Web/context/spec_features/05-weekly-history-summary.md))**:
+    - Finalized streamlined business rules: Only scheduled days (`isRestDay == false`) can have journals; Rest Day journals strictly rejected; `focusDistribution` mapped purely from `WorkoutDay.focus` without fallback guessing; `GET /api/activities/summary/weekly` extracts previous week plan (`weekEndDate < today`).
+    - Built DTO `WeeklyHistorySummaryDto` (`totalScheduledDays`, `completedDays`, `completionRate`, `actualMinutes`, `targetMinutes`, `averageDifficulty`, `averageEnergy`, `painReports`, `focusDistribution`).
+    - Implemented `WeeklyHistorySummaryService` with aggregation and rounding formulas.
+    - Implemented `WeeklyHistorySummaryController` with security via `X-User-ID` header.
+    - **Automated Testing Suite (100% Passed)**:
+      - [WeeklyHistorySummaryServiceTest.java](file:///d:/Fitness-AI-Web/activityservice/src/test/java/com/fitness/activityservice/service/WeeklyHistorySummaryServiceTest.java): 6 unit tests (no history / first week, full week metrics, distinct pain reports, focus mapping without fallback, average rounding, security authorization check).
+      - [WeeklyHistorySummaryControllerTest.java](file:///d:/Fitness-AI-Web/activityservice/src/test/java/com/fitness/activityservice/controller/WeeklyHistorySummaryControllerTest.java): 4 WebMvc tests (200 OK with summary, 204 No Content for first week, 200 OK by planId, 400 Bad Request on unauthorized).
+      - [WorkoutJournalServiceTest.java](file:///d:/Fitness-AI-Web/activityservice/src/test/java/com/fitness/activityservice/service/WorkoutJournalServiceTest.java): Updated to 8 tests including rejection of rest day journals.
+      - Total `activityservice` test suite: **32/32 domain & controller tests PASSED**.
+
 ## In Progress
 
-- **F04 — WeeklyHistorySummary**: Aggregating 7 days of `WorkoutJournal` entries into a compact AI context summary (`WeeklyHistorySummaryDto`) in `activityservice`.
+- **F05 — AIService Prompt & Gemini Integration**: Refactoring `aiservice` to use User Profile + `WeeklyHistorySummary` to generate `WeeklyPlan` with Gemini.
 
 ## Next Up
 
-- **F05 — AIService Prompt & Gemini Integration**: Refactoring `aiservice` to use User Profile + `WeeklyHistorySummary` to generate `WeeklyPlan` with Gemini.
 - **F06 — YouTube Clip Resolver**: Fetching and attaching 3 real YouTube clips (Warmup, Main, Cooldown) per active day.
 
 ## Architecture Decisions

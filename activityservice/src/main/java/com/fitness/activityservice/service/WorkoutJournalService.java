@@ -2,6 +2,8 @@ package com.fitness.activityservice.service;
 
 import com.fitness.activityservice.dto.WorkoutJournalRequest;
 import com.fitness.activityservice.dto.WorkoutJournalResponse;
+import com.fitness.activityservice.model.WeeklyPlan;
+import com.fitness.activityservice.model.WorkoutDay;
 import com.fitness.activityservice.model.WorkoutJournal;
 import com.fitness.activityservice.repository.WeeklyPlanRepository;
 import com.fitness.activityservice.repository.WorkoutJournalRepository;
@@ -32,9 +34,19 @@ public class WorkoutJournalService {
         log.info("Recording workout journal for userId: {}, planId: {}, dayIndex: {}",
                 userId, request.getPlanId(), request.getDayIndex());
 
-        // 1. Validate plan existence
-        if (!weeklyPlanRepository.existsById(request.getPlanId())) {
-            throw new IllegalArgumentException("WeeklyPlan not found for id: " + request.getPlanId());
+        // 1. Validate plan existence and ensure it is a scheduled day (not rest day)
+        WeeklyPlan plan = weeklyPlanRepository.findById(request.getPlanId())
+                .orElseThrow(() -> new IllegalArgumentException("WeeklyPlan not found for id: " + request.getPlanId()));
+
+        if (plan.getDays() != null) {
+            plan.getDays().stream()
+                    .filter(d -> d.getDayIndex() != null && d.getDayIndex().equals(request.getDayIndex()))
+                    .findFirst()
+                    .ifPresent(d -> {
+                        if (Boolean.TRUE.equals(d.getIsRestDay())) {
+                            throw new IllegalArgumentException("Cannot create workout journal for a rest day");
+                        }
+                    });
         }
 
         // 2. Validate difficulty and energy ranges

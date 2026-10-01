@@ -2,6 +2,8 @@ package com.fitness.activityservice.service;
 
 import com.fitness.activityservice.dto.WorkoutJournalRequest;
 import com.fitness.activityservice.dto.WorkoutJournalResponse;
+import com.fitness.activityservice.model.WeeklyPlan;
+import com.fitness.activityservice.model.WorkoutDay;
 import com.fitness.activityservice.model.WorkoutJournal;
 import com.fitness.activityservice.repository.WeeklyPlanRepository;
 import com.fitness.activityservice.repository.WorkoutJournalRepository;
@@ -36,9 +38,27 @@ class WorkoutJournalServiceTest {
     private WorkoutJournalService workoutJournalService;
 
     private WorkoutJournalRequest validRequest;
+    private WeeklyPlan defaultPlan;
 
     @BeforeEach
     void setUp() {
+        WorkoutDay day1 = WorkoutDay.builder()
+                .dayIndex(1)
+                .focus("Core")
+                .totalMinutes(42)
+                .isRestDay(false)
+                .build();
+        WorkoutDay day2 = WorkoutDay.builder()
+                .dayIndex(2)
+                .isRestDay(true)
+                .build();
+
+        defaultPlan = WeeklyPlan.builder()
+                .id("plan-123")
+                .userId("kc-user-1")
+                .days(Arrays.asList(day1, day2))
+                .build();
+
         validRequest = WorkoutJournalRequest.builder()
                 .planId("plan-123")
                 .dayIndex(1)
@@ -60,7 +80,7 @@ class WorkoutJournalServiceTest {
     @Test
     @DisplayName("recordJournal - Lưu journal thành công khi planId tồn tại")
     void testRecordJournal_Success() {
-        when(weeklyPlanRepository.existsById("plan-123")).thenReturn(true);
+        when(weeklyPlanRepository.findById("plan-123")).thenReturn(Optional.of(defaultPlan));
         when(workoutJournalRepository.findByUserIdAndPlanIdAndDayIndex("kc-user-1", "plan-123", 1))
                 .thenReturn(Optional.empty());
         when(workoutJournalRepository.save(any(WorkoutJournal.class))).thenAnswer(invocation -> {
@@ -85,7 +105,7 @@ class WorkoutJournalServiceTest {
     @Test
     @DisplayName("recordJournal - Ném IllegalArgumentException khi planId không tồn tại")
     void testRecordJournal_PlanNotFound() {
-        when(weeklyPlanRepository.existsById("plan-non-existent")).thenReturn(false);
+        when(weeklyPlanRepository.findById("plan-non-existent")).thenReturn(Optional.empty());
         validRequest.setPlanId("plan-non-existent");
 
         assertThatThrownBy(() -> workoutJournalService.recordJournal("kc-user-1", validRequest))
@@ -94,9 +114,20 @@ class WorkoutJournalServiceTest {
     }
 
     @Test
+    @DisplayName("recordJournal - Ném ngoại lệ khi cố gắng ghi nhật ký cho Rest Day")
+    void testRecordJournal_RestDay_ThrowsException() {
+        when(weeklyPlanRepository.findById("plan-123")).thenReturn(Optional.of(defaultPlan));
+        validRequest.setDayIndex(2); // dayIndex 2 is rest day
+
+        assertThatThrownBy(() -> workoutJournalService.recordJournal("kc-user-1", validRequest))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Cannot create workout journal for a rest day");
+    }
+
+    @Test
     @DisplayName("recordJournal - Ném ngoại lệ khi difficulty nằm ngoài 1-5")
     void testRecordJournal_InvalidDifficulty() {
-        when(weeklyPlanRepository.existsById("plan-123")).thenReturn(true);
+        when(weeklyPlanRepository.findById("plan-123")).thenReturn(Optional.of(defaultPlan));
         validRequest.setDifficulty(6);
 
         assertThatThrownBy(() -> workoutJournalService.recordJournal("kc-user-1", validRequest))
@@ -107,7 +138,7 @@ class WorkoutJournalServiceTest {
     @Test
     @DisplayName("recordJournal - Ném ngoại lệ khi energy nằm ngoài 1-5")
     void testRecordJournal_InvalidEnergy() {
-        when(weeklyPlanRepository.existsById("plan-123")).thenReturn(true);
+        when(weeklyPlanRepository.findById("plan-123")).thenReturn(Optional.of(defaultPlan));
         validRequest.setEnergy(0);
 
         assertThatThrownBy(() -> workoutJournalService.recordJournal("kc-user-1", validRequest))
@@ -121,7 +152,7 @@ class WorkoutJournalServiceTest {
         validRequest.setHasPain(false);
         validRequest.setPainLocations(Arrays.asList("KNEE_PAIN", "LOWER_BACK"));
 
-        when(weeklyPlanRepository.existsById("plan-123")).thenReturn(true);
+        when(weeklyPlanRepository.findById("plan-123")).thenReturn(Optional.of(defaultPlan));
         when(workoutJournalRepository.findByUserIdAndPlanIdAndDayIndex("kc-user-1", "plan-123", 1))
                 .thenReturn(Optional.empty());
         when(workoutJournalRepository.save(any(WorkoutJournal.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -144,7 +175,7 @@ class WorkoutJournalServiceTest {
                 .energy(3)
                 .build();
 
-        when(weeklyPlanRepository.existsById("plan-123")).thenReturn(true);
+        when(weeklyPlanRepository.findById("plan-123")).thenReturn(Optional.of(defaultPlan));
         when(workoutJournalRepository.findByUserIdAndPlanIdAndDayIndex("kc-user-1", "plan-123", 1))
                 .thenReturn(Optional.of(existing));
         when(workoutJournalRepository.save(any(WorkoutJournal.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -159,7 +190,7 @@ class WorkoutJournalServiceTest {
     @Test
     @DisplayName("recordJournal - Từ chối ảnh raw Base64, chỉ nhận URL")
     void testRecordJournal_RejectBase64Image() {
-        when(weeklyPlanRepository.existsById("plan-123")).thenReturn(true);
+        when(weeklyPlanRepository.findById("plan-123")).thenReturn(Optional.of(defaultPlan));
         validRequest.setPhotoUrl("data:image/jpeg;base64,/9j/4AAQSkZJRgABA...");
 
         assertThatThrownBy(() -> workoutJournalService.recordJournal("kc-user-1", validRequest))

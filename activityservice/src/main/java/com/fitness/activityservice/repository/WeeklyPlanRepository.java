@@ -4,6 +4,7 @@ import com.fitness.activityservice.model.WeeklyPlan;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -15,4 +16,6 @@ public interface WeeklyPlanRepository extends MongoRepository<WeeklyPlan, String
     List<WeeklyPlan> findByUserIdOrderByCreatedAtDesc(String userId);
 
     List<WeeklyPlan> findByUserIdAndIsActive(String userId, Boolean isActive);
+
+    Optional<WeeklyPlan> findFirstByUserIdAndEndDateBeforeOrderByEndDateDesc(String userId, LocalDate date);
 }
