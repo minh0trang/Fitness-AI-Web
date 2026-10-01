@@ -90,11 +90,12 @@ Lưu kho clip video bài tập tương ứng:
 
 ---
 
-## 4. Nguyên Tắc Cốt Lõi: Gemini Không Chọn Video
+## 4. Nguyên Tắc Cốt Lõi: Gemini Không Chọn Video & Không Tự Đặt Tên
 
-1. **Gemini chỉ quyết định mã bài tập (`code`)**:
-   - Gemini chỉ trả về mã chuẩn: `WARMUP_ARM_CIRCLES`, `PUSH_UP`, `SQUAT`, `PLANK`, `COOLDOWN_HAMSTRING_STRETCH`... cùng số sets, reps, thời lượng.
+1. **Gemini chỉ quyết định mã bài tập (`code`) cùng thông số tập luyện**:
+   - Gemini chỉ trả về mã chuẩn: `WARMUP_ARM_CIRCLES`, `PUSH_UP`, `SQUAT`, `PLANK`, `COOLDOWN_HAMSTRING_STRETCH`... cùng số sets, reps, thời lượng, và phase (`WARMUP`, `MAIN`, `COOLDOWN`).
    - Gemini **không bao giờ trả URL video YouTube** (loại bỏ hoàn toàn rủi ro AI sinh link ảo 404, link video bị xóa hoặc không đúng bài tập).
+   - **Tên bài tập (`name`) lấy 100% từ Exercise Catalog, tuyệt đối không để Gemini tự đặt tên**: Backend tra cứu `Exercise Catalog` bằng `code` để lấy tên chuẩn hóa tiếng Việt, nhóm cơ (`focus`) và dụng cụ yêu cầu.
 2. **Backend tự tìm video trong kho**:
    - Backend lấy mã `code` tra cứu trong `Exercise Catalog` ➔ Lấy `exerciseId`.
    - Tìm kiếm trong `ExerciseVideo` các clip có `exerciseId` khớp, ưu tiên video có `level` và `equipment` tương thích với `UserProfile` của người dùng.
@@ -105,9 +106,9 @@ Lưu kho clip video bài tập tương ứng:
 
 Sau khi Gemini trả về mã bài tập và hệ thống tra cứu qua **Exercise Catalog**, `AiPlanValidator` kiểm tra nghiêm ngặt 5 tiêu chí:
 
-### 5.1. Exercise có tồn tại trong Catalog không?
+### 5.1. Exercise có tồn tại trong Catalog không? (Unknown Exercise -> REJECT)
 * Mọi mã `code` do Gemini sinh ra bắt buộc phải tìm thấy thực thể tương ứng trong collection `exercises`.
-* Nếu mã lạ không tồn tại ➔ Validator từ chối plan hoặc fallback bài tập cùng nhóm cơ.
+* **Nếu phát hiện bất kỳ mã `code` nào không tồn tại trong Catalog ➔ Validator REJECT (từ chối toàn bộ plan) ngay lập tức, tuyệt đối KHÔNG fallback hay tự suy đoán.**
 
 ### 5.2. Equipment có phù hợp không?
 * Mọi dụng cụ yêu cầu của bài tập (`exercise.equipment`) phải nằm trong tập dụng cụ người dùng sở hữu (`userProfile.equipment`).
@@ -122,7 +123,7 @@ Validator áp dụng quy tắc phân cấp rõ ràng theo kinh nghiệm tập lu
 | **`INTERMEDIATE`** | Chấp nhận bài tập **`BEGINNER`** và **`INTERMEDIATE`**. |
 | **`ADVANCED`** | Chấp nhận toàn bộ: **`BEGINNER`**, **`INTERMEDIATE`**, và **`ADVANCED`**. |
 
-*Nếu bài tập vượt quá cấp bậc cho phép của user ➔ Validator đánh dấu vi phạm.*
+*Nếu bài tập vượt quá cấp bậc cho phép của user ➔ Validator đánh dấu vi phạm và từ chối plan.*
 
 ### 5.4. Scheduled Day có bài tập không?
 * Các ngày thuộc `userProfile.selectedDays` bắt buộc có `isRestDay = false` và phải có đủ 3 pha: `WARMUP`, `MAIN`, `COOLDOWN`.
@@ -132,14 +133,16 @@ Validator áp dụng quy tắc phân cấp rõ ràng theo kinh nghiệm tập lu
 
 ---
 
-## 6. Phản Hồi Thể Chất: Sử Dụng Thuật Ngữ `painReports` (Tránh Kết Luận Y Khoa)
+## 6. Phản Hồi Thể Chất: `painReports` Là Application Constraints (Không Phải Chẩn Đoán Y Khoa)
 
-Hệ thống **không đưa ra kết luận hoặc chẩn đoán y khoa**. Hệ thống chỉ tiếp nhận và thích ứng theo phản hồi thể chất chủ quan của người dùng:
-* Thay vì gọi "chấn thương", hệ thống định danh là **`painReports` / tín hiệu mệt mỏi**.
+Hệ thống **hoàn toàn không đưa ra chẩn đoán hay kết luận y khoa**. Thuật ngữ `painReports` được xử lý thuần túy như **Application Constraints (ràng buộc lọc cấp ứng dụng)**:
+* `painReports` đóng vai trò là **bộ lọc loại trừ chuyển động (motion/keyword exclusion filter)**:
+  - Nếu `painReports` chứa `KNEE_PAIN` ➔ Ràng buộc ứng dụng loại trừ các động tác gập gối sâu, bật nhảy (Squat, Jump, Lunge), thay thế bằng động tác tĩnh trên thảm (Glute bridge, Clamshell).
+  - Nếu `painReports` chứa `LOWER_BACK` ➔ Loại trừ động tác Deadlift hoặc gập lưng nặng, thay thế bằng Bird-Dog, Cat-Cow.
 * **Tuần đầu tiên (First Plan)**: `previousWeekSummary = null` ➔ Gemini sinh giáo án khởi động dựa trên `UserProfile` (mục tiêu, sở thích, hạn chế vận động).
-* **Tuần thích ứng (Adaptive Plan)**: Nhận `previousWeekSummary` chứa `painReports` (ví dụ `["KNEE_PAIN"]`) và tín hiệu mệt mỏi (`averageDifficulty` cao, `averageEnergy` thấp):
-  - Gemini tự động né các động tác tác động vào khu vực người dùng báo đau (ví dụ gối đau ➔ thay thế bài nhảy/squat sâu bằng bài tĩnh trên thảm).
-  - Tự động điều chỉnh cường độ (deload) nếu ghi nhận mệt mỏi kéo dài.
+* **Tuần thích ứng (Adaptive Plan)**: Nhận `previousWeekSummary` chứa `painReports` và tín hiệu mệt mỏi (`averageDifficulty` cao, `averageEnergy` thấp):
+  - Gemini áp dụng application constraints để loại trừ chuyển động nhạy cảm.
+  - Tự động điều chỉnh khối lượng (deload an toàn) nếu ghi nhận mệt mỏi kéo dài.
 
 ---
 
