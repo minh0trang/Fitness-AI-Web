@@ -17,12 +17,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import SelfImprovementIcon from "@mui/icons-material/SelfImprovement";
 import PlayCircleOutlineRoundedIcon from "@mui/icons-material/PlayCircleOutlineRounded";
-import {
-  calculateBMR,
-  calculateTDEE,
-  calculateBMI,
-} from "../utils/fitnessCalculators";
-import { generateAiWeeklyPlan } from "../data/mockWorkouts";
+import { generateAiWeeklyPlan, getWorkoutDayMeta } from "../data/mockWorkouts";
 
 export default function AiPlanPage({
   profile,
@@ -57,16 +52,30 @@ export default function AiPlanPage({
   const [analysisProgress, setAnalysisProgress] = useState(15);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
-  // Calculations for Coach Banner
-  const weight = profile?.weight || 53;
-  const height = profile?.height || 162;
-  const age = profile?.age || 24;
-  const gender = profile?.gender || "female";
-  const activityLevel = profile?.activityLevel || "light";
+  // Workout Goal & Level Info (app không làm nutrition, tập trung rèn luyện)
+  const goalLabel = profile?.fitnessGoal === "fat_loss" || !profile?.fitnessGoal
+    ? "Giảm vòng eo"
+    : (
+      profile?.fitnessGoal === "muscle_gain" ? "Tăng cơ & Săn chắc" :
+      profile?.fitnessGoal === "strength" ? "Phát triển sức mạnh" :
+      profile?.fitnessGoal === "endurance" ? "Nâng cao sức bền" :
+      profile?.fitnessGoal === "flexibility" ? "Dẻo dai & Linh hoạt" :
+      profile?.fitnessGoal
+    );
 
-  const bmr = useMemo(() => calculateBMR(weight, height, age, gender), [weight, height, age, gender]);
-  const tdee = useMemo(() => calculateTDEE(bmr, activityLevel), [bmr, activityLevel]);
-  const deficitCal = tdee > 0 ? tdee - 350 : 0;
+  const experienceLabel = profile?.experience === "intermediate"
+    ? "Intermediate"
+    : profile?.experience === "advanced"
+      ? "Advanced"
+      : "Beginner";
+
+  const workoutDaysCount = scheduleConfig?.selectedDays?.length || plan.filter((d) => d.status !== "rest").length || 5;
+
+  const totalWeekMinutes = useMemo(() => {
+    return plan
+      .filter((d) => d.status !== "rest")
+      .reduce((sum, d) => sum + (d.totalMinutes || 0), 0) || 190;
+  }, [plan]);
 
   // Re-generate different plan with Radar scanning
   const handleRegenerate = () => {
@@ -199,7 +208,7 @@ export default function AiPlanPage({
           <Box sx={{ height: 28, mb: 3 }}>
             {analysisStep === 0 && (
               <Typography variant="body2" sx={{ color: "#059669", fontWeight: 700, fontSize: "0.95rem" }}>
-                ⚡ Đang tính toán BMR & TDEE theo thể trạng...
+                ⚡ Đang phân tích mục tiêu & thể trạng của bạn...
               </Typography>
             )}
             {analysisStep === 1 && (
@@ -267,38 +276,43 @@ export default function AiPlanPage({
                 </Box>
                 <Box>
                   <Typography variant="subtitle1" sx={{ fontWeight: 850, color: "#065F46", lineHeight: 1.2 }}>
-                    Kế Hoạch Tập Luyện AI Đề Xuất (7 Ngày Chuẩn Y Khoa)
+                    AI Weekly Workout Plan (7 ngày)
                   </Typography>
                   <Typography variant="caption" sx={{ color: "#047857", fontWeight: 600 }}>
-                    Cá nhân hóa cho: {profile?.name || "Minh Trang"} ({gender === "female" ? "Nữ" : "Nam"}, {age} tuổi) • {scheduleConfig?.duration || "30-45"} phút/buổi
+                    Cá nhân hóa cho: {profile?.name || "Minh Trang"} ({profile?.gender === "female" ? "Nữ" : "Nam"}, {profile?.age || 24} tuổi) • {scheduleConfig?.duration || "30–45"} phút/buổi
                   </Typography>
                 </Box>
               </Box>
 
-              {/* Scientific Metric Badges */}
-              <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-                <Chip
-                  label={`BMR: ~${bmr} kcal`}
-                  size="small"
-                  sx={{ bgcolor: "#FFFFFF", fontWeight: 700, fontSize: "0.72rem", border: "1px solid #D1FAE5", color: "#065F46" }}
-                />
-                <Chip
-                  label={`TDEE: ~${tdee} kcal`}
-                  size="small"
-                  sx={{ bgcolor: "#FFFFFF", fontWeight: 700, fontSize: "0.72rem", border: "1px solid #D1FAE5", color: "#065F46" }}
-                />
-                <Chip
-                  label={`Khuyến nghị calo: ~${deficitCal} kcal/ngày`}
-                  size="small"
-                  sx={{ bgcolor: "#10B981", color: "#FFFFFF", fontWeight: 800, fontSize: "0.72rem" }}
-                />
+              {/* Workout Goal & Schedule Specs (1 dòng duy nhất) */}
+              <Box
+                sx={{
+                  bgcolor: "#FFFFFF",
+                  px: 1.8,
+                  py: 0.8,
+                  borderRadius: 2.5,
+                  border: "1px solid #A7F3D0",
+                  boxShadow: "0 2px 6px rgba(16, 185, 129, 0.08)",
+                  display: "flex",
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                  gap: 1,
+                }}
+              >
+                <Typography variant="body2" sx={{ fontWeight: 800, color: "#065F46", fontSize: "0.82rem" }}>
+                  🎯 Mục tiêu: {goalLabel}
+                </Typography>
+                <Box sx={{ width: "1px", height: 14, bgcolor: "#A7F3D0", display: { xs: "none", sm: "block" } }} />
+                <Typography variant="caption" sx={{ color: "#047857", fontWeight: 700, fontSize: "0.78rem" }}>
+                  🏋️ {experienceLabel} · ⏱ {scheduleConfig?.duration || "30–45"} phút/buổi · 📅 {workoutDaysCount} buổi/tuần
+                </Typography>
               </Box>
             </Box>
 
             {/* Pastel AI Coach Note Box */}
             <Box sx={{ mt: 1.5, p: 1.3, borderRadius: 2.5, bgcolor: "rgba(255, 255, 255, 0.85)", border: "1px solid #A7F3D0" }}>
               <Typography variant="body2" sx={{ color: "#1E293B", fontSize: "0.82rem", lineHeight: 1.5 }}>
-                💡 <strong>Lời dặn của AI Coach:</strong> "Giáo án tuần này được thiết kế theo đúng thời lượng <strong>{scheduleConfig?.duration || "30-45"} phút/buổi</strong>, hoàn toàn <strong>Low-Impact (Không nhảy)</strong>, tập trung siết chặt nhóm cơ core/eo ngang và bảo vệ tuyệt đối khớp gối theo yêu cầu thể lực của bạn."
+                💡 <strong>Gợi ý từ AI Coach:</strong> "Giáo án tuần này được tối ưu theo thời lượng <strong>{scheduleConfig?.duration || "30-45"} phút/buổi</strong>, ưu tiên bài tập <strong>Low-Impact (Không nhảy)</strong>, tập trung vào nhóm cơ Core/eo và giảm tối đa áp lực lên khớp gối theo thể trạng của bạn."
               </Typography>
             </Box>
           </Card>
@@ -317,11 +331,32 @@ export default function AiPlanPage({
               gap: 1.5,
             }}
           >
+            {/* Weekly Overview Line */}
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                bgcolor: "#F8FAFC",
+                px: 1.8,
+                py: 0.8,
+                borderRadius: 2,
+                border: "1px solid #E2E8F0",
+                flexWrap: "wrap",
+                gap: 0.8,
+              }}
+            >
+              <Typography variant="body2" sx={{ fontWeight: 700, color: "#334155", fontSize: "0.82rem" }}>
+                🗓️ Tuần này: <strong>{workoutDaysCount} buổi</strong> · <strong>~{totalWeekMinutes} phút</strong> · <strong>Core · Lower Body · Full Body</strong>
+              </Typography>
+            </Box>
+
             {/* Day Selector Bar (T2 -> CN) */}
             <Box sx={{ display: "flex", gap: 1, width: "100%", justifyContent: "space-between" }}>
               {plan.map((day) => {
                 const isSelected = selectedDayIndex === day.dayIndex;
                 const isRest = day.status === "rest";
+                const dayMeta = getWorkoutDayMeta(day);
 
                 return (
                   <Box
@@ -348,7 +383,7 @@ export default function AiPlanPage({
                       {day.dateStr}
                     </Typography>
                     <Typography variant="caption" sx={{ fontSize: "0.58rem", fontWeight: 700, mt: 0.2, display: "block" }}>
-                      {isRest ? "Nghỉ" : `~${day.totalCalories}k`}
+                      {isRest ? "Nghỉ" : `${day.totalMinutes}p · ${dayMeta?.intensity || "Moderate"}`}
                     </Typography>
                   </Box>
                 );
@@ -386,20 +421,32 @@ export default function AiPlanPage({
               return (
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
                   {/* Day Header Info */}
-                  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", pb: 1, borderBottom: "1px solid #F1F5F9" }}>
+                  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", pb: 1, borderBottom: "1px solid #F1F5F9", flexWrap: "wrap", gap: 1 }}>
                     <Box>
                       <Typography variant="h6" sx={{ fontWeight: 850, color: "#0F172A", fontSize: "1.05rem" }}>
                         {currentDay.dayName} ({currentDay.dateStr}) — {currentDay.focusTitle}
                       </Typography>
-                      <Typography variant="caption" sx={{ color: "#64748B", fontWeight: 600 }}>
-                        Cấu trúc chuẩn y khoa: Khởi động ➔ Bài chính ➔ Giãn cơ
-                      </Typography>
+                      
                     </Box>
 
-                    <Chip
-                      label={`🔥 Tổng: ~${currentDay.totalCalories} kcal • ⏱️ ${currentDay.totalMinutes} phút`}
-                      sx={{ bgcolor: "#ECFDF5", color: "#059669", fontWeight: 800, fontSize: "0.75rem" }}
-                    />
+                    {(() => {
+                      const dayMeta = getWorkoutDayMeta(currentDay);
+                      return dayMeta ? (
+                        <Chip
+                          label={`🎯 ${dayMeta.focus} · 🔥 ${dayMeta.intensity} · ⏱ ${dayMeta.minutes} phút`}
+                          sx={{
+                            bgcolor: "#ECFDF5",
+                            color: "#059669",
+                            fontWeight: 800,
+                            fontSize: "0.82rem",
+                            border: "1.5px solid #A7F3D0",
+                            px: 0.6,
+                            py: 0.5,
+                            height: 28,
+                          }}
+                        />
+                      ) : null;
+                    })()}
                   </Box>
 
                   {/* 3 Clips Flow Container */}
@@ -440,7 +487,7 @@ export default function AiPlanPage({
                             </Typography>
                           </Box>
                           <Typography variant="caption" sx={{ color: "#10B981", fontWeight: 600, fontSize: "0.62rem", mt: 0.8 }}>
-                            ✓ Làm nóng khớp cổ tay & bảo vệ khớp gối
+                            ✓ Làm nóng khớp & giảm áp lực khớp gối
                           </Typography>
                         </Card>
                       </Grid>

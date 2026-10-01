@@ -275,10 +275,10 @@ export default function LoginPage({ onLogin, onRegister, onGuestEnter }) {
                 </Box>
                 <Box>
                   <Typography variant="body2" sx={{ fontWeight: 700, color: "#FFFFFF !important", fontSize: "0.82rem" }}>
-                    Video Giáo Án 3 Pha Chuẩn Y Khoa
+                    Lộ Trình Buổi Tập 3 Pha Khoa Học
                   </Typography>
                   <Typography variant="caption" sx={{ color: "rgba(255, 255, 255, 0.72) !important", display: "block", fontSize: "0.7rem" }}>
-                    Khởi động ➔ Bài tập chính ➔ Giãn cơ an toàn.
+                    Khởi động → Bài tập chính → Giãn cơ an toàn.
                   </Typography>
                 </Box>
               </Box>

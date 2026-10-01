@@ -167,49 +167,39 @@ Desktop layout uses zero-scroll geometry (`overflow: hidden`) with balanced vert
 
 ### Workout Plan
 
-Use a clear weekly structure:
+### AI Workout Plan (`AiPlanPage.jsx`)
 
-    Workout Plan
-        ↓
-    Week Selector (e.g. Tuần 1, Tuần 2...)
-        ↓
-    Weekly Schedule
-        ↓
-    Workout Cards
+The dedicated AI Plan Page (`/ai-plan`) presents the adaptive 7-day routine with a pure workout focus (non-nutrition):
 
-Each workout card should clearly communicate:
-- Workout name
-- Training day
-- Duration
-- Difficulty
-- Completion status
+1. **Header Banner**:
+   - Replaces nutrition/calorie stats with a single-row workout spec badge:
+     `🎯 Mục tiêu: Giảm vòng eo  |  🏋️ Beginner · ⏱ 30–45 phút/buổi · 📅 5 buổi/tuần`
+   - AI Coach Guidance box: Gentle, injury-prevention advice (Low-Impact, protecting joints).
+2. **Weekly Overview Banner**:
+   - Clean, chartless summary line above the day selector:
+     `🗓️ Tuần này: 5 buổi · ~190 phút · Core · Lower Body · Full Body`
+3. **7-Day Selector Bar**:
+   - Interactive day pills showing day name, date, and 2-metric summary (`${duration}p · ${intensity}`, e.g., `42p · Moderate`).
+4. **Day Routine & Multi-Video Flow**:
+   - Status chip summarizing 3 dimensions: `🎯 [Focus Area] · 🔥 [Intensity] · ⏱ [Duration] phút` (e.g. `🎯 Core · 🔥 Moderate · ⏱ 42 phút`).
+   - 3-Phase video progression cards:
+     - Clip 1: Khởi động (Warm-up 3–5 min)
+     - Clip 2: Bài tập chính (Main 15–25 min)
+     - Clip 3: Giãn cơ (Cool-down 5–10 min)
+   - Rest day isolation with dedicated recovery recommendations.
 
-### Workout Detail
+### Workout Detail & Execution (`SchedulePage.jsx`)
 
-Prioritize the workout itself.
-
-Recommended structure:
-
-    Workout Header
-        ↓
-    Workout Summary
-        ↓
-    Exercise List
-        ↓
-    Exercise Instructions
-        ↓
-    YouTube Tutorial
-        ↓
-    Complete Workout
-
-The "Complete Workout" action should remain clearly visible.
+Prioritize the workout execution itself:
+- Top 1-week timeline bar (T2 to CN) with status chips.
+- Synchronized playlist header displaying `🎯 Core · 🔥 Moderate · ⏱ 42 phút`.
+- Multi-video playlist alongside YouTube player with theater mode toggle and rest timer.
 
 ### Progress
 
 Use visual summaries rather than large tables.
 
 Recommended elements:
-
 - Completed workouts
 - Weekly completion rate
 - Total workout time
@@ -217,38 +207,27 @@ Recommended elements:
 - Progress trend
 - AI recommendation
 
-Charts should be simple and readable.
-
-Do not add charts unless they communicate useful information.
-
 ### Fitness Profile (Weekly Check-in Station)
 
 The Fitness Profile functions as the **Weekly Physical Check-in Station** for the Adaptive AI Coaching loop:
 
-- **Balanced 2-Column Desktop Layout (55% Form / 45% Scientific Analysis)**:
-  - **Left Column (55%)**:
-    1. *Basic Metrics*: Name, Gender toggle (clean icons with tooltips), Age, Height, Weight.
-    2. *Body Circumferences*: Chest, Waist, Hip (with fat-loss priority badge for waist).
-    3. *Lifestyle & Goals*: Daily activity level multiplier, primary fitness goal.
-    4. *AI Coach Preferences*: Free-text textarea for weekly feedback/wishes (e.g., joint pain, travel schedule).
-    5. *Primary Action*: "Cập nhật hồ sơ & Tối ưu lộ trình tuần mới".
-  - **Right Column (45%)**:
-    1. *Calorie Target Card*: TDEE vs Target deficit comparison bar.
-    2. *Body Metrics Summary*: BMR and BMI cards.
-    3. *AI Coach Insight Card*: Training focus recommendations and exercises to avoid.
-    4. *Deep Analysis Action*: Triggers the 4-section AI Advice Modal (Macros, Joint/Waist care, 4-week roadmap, Recovery habits).
+- **Simplified, clean section titles**:
+  1. *1. Thông tin cơ bản*: Name, Gender toggle, Age, Height, Weight.
+  2. *2. Mục tiêu tập luyện*: Primary fitness goal single-choice.
+  3. *3. Kinh nghiệm*: Training level (Beginner, Intermediate, Advanced).
+  4. *4. Chỉ số cơ thể*: Bust, Waist, Hips.
+  5. *Cấu hình Lịch tập & Ràng buộc AI*: 7-day selector, session duration, physical limitations (negative keywords), available equipment (attribute filters), custom wishes.
 
 ### Modals / Dialogs
 
-Use MUI `Dialog` for confirmation or focused interactions.
-
-Dialogs should:
-- Have a clear title.
-- Have a concise description.
-- Provide an obvious primary action.
-- Provide a cancel/close action when appropriate.
-
-Do not use dialogs for information that can be displayed directly on the page.
+Use MUI `Dialog` for confirmation or focused interactions:
+- Have a clear title and concise description.
+- Provide an obvious primary action and close action.
+- **Workout Journal Dialog (`WorkoutJournalDialog.jsx`) Pattern**:
+  - `maxHeight: "90vh"` with `overflow: "hidden"` on Paper.
+  - `DialogContent` with `dividers` and `overflowY: "auto"` (styled slim scrollbar) so expanding photo upload or long notes never overflows the screen.
+  - Pinned sticky bottom `DialogActions` (`flexShrink: 0`, top border) ensuring primary submission buttons ("Bỏ qua", "Lưu Vào Nhật Ký") remain perpetually visible.
+  - Survey flow: RPE Difficulty (1-5), Energy level (1-5), Safety Pain Check (`PAIN_AREAS`), Optional Photo upload, and Personal notes.
 
 ## Responsive Design
 

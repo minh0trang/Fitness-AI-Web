@@ -40,5 +40,6 @@ export function calculateTDEE(bmr, activityLevel = 'moderate') {
 export function calculateBMI(weight, height) {
   if (!weight || !height) return 0;
   const heightInMeters = Number(height) / 100;
-  return (Number(weight) / (heightInMeters * heightInMeters)).toFixed(1);
+  return Number((Number(weight) / (heightInMeters * heightInMeters)).toFixed(1));
 }
+

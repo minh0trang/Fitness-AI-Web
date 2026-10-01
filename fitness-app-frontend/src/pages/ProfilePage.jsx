@@ -13,6 +13,7 @@ import {
   InputAdornment,
   Chip,
   LinearProgress,
+  Tooltip,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import PersonIcon from "@mui/icons-material/Person";
@@ -23,6 +24,10 @@ import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import FemaleIcon from "@mui/icons-material/Female";
 import MaleIcon from "@mui/icons-material/Male";
+import FitnessCenterIcon from "@mui/icons-material/FitnessCenter";
+import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
+import SpeedIcon from "@mui/icons-material/Speed";
+import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
 import {
   calculateBMR,
   calculateTDEE,
@@ -47,33 +52,54 @@ const DURATION_OPTIONS = [
   { id: "45-60", label: "45 - 60 phút", desc: "Đốt mỡ & siết cơ chuyên sâu" },
 ];
 
-// 1. Cụm: Hạn chế thể chất & Chấn thương (Physical Limitations)
-// Bộ lọc loại trừ (Negative Keywords) để AI tránh gợi ý các động tác gây chấn thương thêm
-export const PHYSICAL_LIMITATIONS = [
-  // Theo vùng đau / Chấn thương khớp
-  { id: "knee_pain", label: "🦵 Đau khớp gối" },
-  { id: "lower_back", label: "💆 Đau lưng dưới" },
-  { id: "wrist_pain", label: "🖐️ Đau cổ tay" },
-  { id: "neck_shoulder", label: "🧣 Đau cổ / Vai gáy" },
-  // Theo cường độ & Môi trường
-  { id: "no_jumping", label: "🚫 Không nhảy (No Jumping / Low-Impact)" },
-  { id: "standing_only", label: "🧍 Bài tập đứng (Standing Only)" },
-  { id: "beginner", label: "🌱 Người mới bắt đầu (Beginner)" },
+// 1. Mục tiêu tập luyện chính (Primary Fitness Goal - Chọn duy nhất 1)
+export const FITNESS_GOALS = [
+  { id: "fat_loss", label: "Giảm mỡ & Thu nhỏ eo", icon: "🔥", desc: "Đốt mỡ, thon gọn" },
+  { id: "muscle_gain", label: "Tăng khối lượng cơ", icon: "💪", desc: "Săn chắc & nở nang" },
+  { id: "strength", label: "Phát triển sức mạnh", icon: "🏋️", desc: "Tăng lực cơ bắp" },
+  { id: "endurance", label: "Nâng cao sức bền", icon: "🏃", desc: "Tim mạch & dẻo dai" },
+  { id: "general_fitness", label: "Thể lực & Khỏe mạnh", icon: "⚡", desc: "Năng động mỗi ngày" },
+  { id: "flexibility", label: "Linh hoạt & Dẻo dai", icon: "🧘", desc: "Kéo giãn & phục hồi" },
 ];
 
-// 2. Cụm: Dụng cụ sẵn có (Available Equipment)
+// 2. Kinh nghiệm tập luyện (Training Experience)
+export const EXPERIENCE_LEVELS = [
+  { id: "beginner", label: "Mới bắt đầu", desc: "< 6 tháng" },
+  { id: "intermediate", label: "Có kinh nghiệm", desc: "6 tháng - 2 năm" },
+  { id: "advanced", label: "Nâng cao", desc: "> 2 năm" },
+];
+
+// 3. Thể loại bài tập yêu thích (Workout Preferences - Tối đa 3)
+export const WORKOUT_PREFERENCES = [
+  { id: "strength", label: "🏋️ Sức mạnh", desc: "Kháng lực / Tạ" },
+  { id: "cardio", label: "🏃 Cardio", desc: "Đốt mỡ toàn thân" },
+  { id: "yoga", label: "🧘 Yoga", desc: "Thăng bằng & dẻo dai" },
+  { id: "pilates", label: "🤸 Pilates", desc: "Siết eo & cơ cốt lõi" },
+  { id: "mobility", label: "🧘‍♂️ Giãn cơ", desc: "Phục hồi khớp" },
+  { id: "hiit", label: "⚡ HIIT", desc: "Cường độ cao" },
+];
+
+// 4. Cụm: Hạn chế thể chất & Chấn thương (Physical Limitations)
+// Bộ lọc loại trừ (Negative Keywords) - Đã tách "Beginner" sang mục Kinh nghiệm riêng biệt
+export const PHYSICAL_LIMITATIONS = [
+  { id: "knee_pain", label: "Đau khớp gối" },
+  { id: "lower_back", label: "Đau lưng dưới" },
+  { id: "wrist_pain", label: "Đau cổ tay" },
+  { id: "neck_shoulder", label: "Đau cổ / Vai gáy" },
+  { id: "no_jumping", label: "Không nhảy" },
+  { id: "standing_only", label: "Bài tập đứng" },
+];
+
+// 5. Cụm: Dụng cụ sẵn có (Available Equipment)
 // Bộ lọc điều kiện (Attribute Filter) để AI xác định dạng bài tập
 export const AVAILABLE_EQUIPMENT = [
-  // Cơ bản tại nhà
-  { id: "bodyweight", label: "🛋️ Không dụng cụ (Bodyweight)" },
-  { id: "yoga_mat", label: "🧘 Thảm Yoga / Thảm tập" },
-  // Dụng cụ trợ lực nhẹ
-  { id: "resistance_band", label: "🎗️ Dây kháng lực (Mini Band)" },
-  { id: "dumbbell", label: "🏋️ Tạ đơn nhỏ (Dumbbells 1–3kg)" },
-  { id: "chair_wall", label: "🪑 Ghế tựa / Tường (Chair / Wall)" },
-  // Dụng cụ chuyên biệt
-  { id: "kettlebell", label: "🔔 Tạ chuông (Kettlebell)" },
-  { id: "swiss_ball", label: "⚽ Bóng Yoga (Swiss Ball)" },
+  { id: "bodyweight", label: "Không dụng cụ" },
+  { id: "yoga_mat", label: "Thảm Yoga" },
+  { id: "resistance_band", label: "Dây kháng lực" },
+  { id: "dumbbell", label: "Tạ đơn nhỏ" },
+  { id: "chair_wall", label: "Ghế tựa / Tường " },
+  { id: "kettlebell", label: "Tạ chuông" },
+  { id: "swiss_ball", label: "Bóng Yoga" },
 ];
 
 export default function ProfilePage({
@@ -82,6 +108,7 @@ export default function ProfilePage({
   scheduleConfig,
   onUpdateScheduleConfig,
   setAiPlan,
+  needsOnboarding = false,
 }) {
   const navigate = useNavigate();
 
@@ -101,7 +128,9 @@ export default function ProfilePage({
     waist: profile?.waist || 65,
     hips: profile?.hips || 90,
     activityLevel: profile?.activityLevel || "light",
-    fitnessGoal: profile?.fitnessGoal || "Tập trung giảm 3cm vòng eo và săn chắc cơ thể",
+    fitnessGoal: profile?.fitnessGoal || "fat_loss",
+    experience: profile?.experience || "beginner",
+    workoutPreferences: profile?.workoutPreferences || ["cardio", "pilates"],
     customWishes:
       profile?.customWishes ||
       "Mong muốn giảm 3cm vòng eo trước cuối tháng sau, hạn chế các bài nhảy mạnh tránh đau khớp gối.",
@@ -137,6 +166,36 @@ export default function ProfilePage({
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleGoalSelect = (goalId) => {
+    setFormData((prev) => ({ ...prev, fitnessGoal: goalId }));
+  };
+
+  const handleExperienceSelect = (expId) => {
+    setFormData((prev) => ({ ...prev, experience: expId }));
+  };
+
+  const toggleWorkoutPreference = (prefId) => {
+    setFormData((prev) => {
+      const current = prev.workoutPreferences || [];
+      if (current.includes(prefId)) {
+        if (current.length <= 1) return prev; // Keep at least 1
+        return {
+          ...prev,
+          workoutPreferences: current.filter((id) => id !== prefId),
+        };
+      } else {
+        if (current.length >= 3) {
+          // Maximum 3 selections reached
+          return prev;
+        }
+        return {
+          ...prev,
+          workoutPreferences: [...current, prefId],
+        };
+      }
+    });
   };
 
   const toggleDay = (dayIndex) => {
@@ -177,10 +236,10 @@ export default function ProfilePage({
 
   // Start AI Analysis & Navigate to AI Plan Page
   const handleStartAnalysis = (e) => {
-    if (e) e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     setIsAnalyzing(true);
     setAnalysisStep(0);
-    setAnalysisProgress(15);
+    setAnalysisProgress(20);
   };
 
   useEffect(() => {
@@ -199,17 +258,20 @@ export default function ProfilePage({
     const timer3 = setTimeout(() => {
       setAnalysisProgress(100);
       const allTags = [...currentConfig.limitations, ...currentConfig.equipment];
+      const selectedGoalObj = FITNESS_GOALS.find((g) => g.id === formData.fitnessGoal);
+      const goalText = selectedGoalObj ? selectedGoalObj.label : formData.fitnessGoal;
+
       const generated = generateAiWeeklyPlan({
         selectedDays: currentConfig.selectedDays,
         duration: currentConfig.duration,
         tags: allTags,
         limitations: currentConfig.limitations,
         equipment: currentConfig.equipment,
-        fitnessGoal: formData.fitnessGoal,
+        fitnessGoal: goalText,
         customWishes: formData.customWishes,
       });
 
-      if (onSaveProfile) onSaveProfile(formData);
+      if (onSaveProfile) onSaveProfile(formData, currentConfig);
       if (onUpdateScheduleConfig)
         onUpdateScheduleConfig({
           ...currentConfig,
@@ -227,6 +289,16 @@ export default function ProfilePage({
       clearTimeout(timer3);
     };
   }, [isAnalyzing, currentConfig, formData, onSaveProfile, onUpdateScheduleConfig, setAiPlan, navigate]);
+
+  const selectedGoalName = useMemo(() => {
+    const found = FITNESS_GOALS.find((g) => g.id === formData.fitnessGoal);
+    return found ? found.label : "Giảm mỡ";
+  }, [formData.fitnessGoal]);
+
+  const selectedExpName = useMemo(() => {
+    const found = EXPERIENCE_LEVELS.find((e) => e.id === formData.experience);
+    return found ? found.label : "Người mới";
+  }, [formData.experience]);
 
   return (
     <Box sx={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -269,53 +341,36 @@ export default function ProfilePage({
                 animation: "ripple 2s infinite cubic-bezier(0, 0.2, 0.8, 1)",
                 "@keyframes ripple": {
                   "0%": { transform: "scale(0.8)", opacity: 0.8 },
-                  "100%": { transform: "scale(1.7)", opacity: 0 },
+                  "100%": { transform: "scale(1.4)", opacity: 0 },
                 },
               }}
             />
             <Box
               sx={{
-                width: 76,
-                height: 76,
+                width: 90,
+                height: 90,
                 borderRadius: "50%",
-                bgcolor: "#ECFDF5",
-                border: "2px solid #10B981",
+                background: "linear-gradient(135deg, #10B981 0%, #059669 100%)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                boxShadow: "0 0 25px rgba(16, 185, 129, 0.4)",
-                animation: "pulse 1.5s infinite ease-in-out",
-                "@keyframes pulse": {
-                  "0%, 100%": { transform: "scale(1)" },
-                  "50%": { transform: "scale(1.06)" },
-                },
+                color: "#FFFFFF",
+                boxShadow: "0 8px 25px rgba(16, 185, 129, 0.4)",
               }}
             >
-              <AutoAwesomeIcon sx={{ fontSize: 36, color: "#10B981" }} />
+              <AutoAwesomeIcon sx={{ fontSize: 44 }} />
             </Box>
           </Box>
 
           <Typography variant="h5" sx={{ fontWeight: 850, color: "#0F172A", mb: 1 }}>
-            AI Đang Thiết Kế Giáo Án Tuần Chuẩn Xác
+            AI Gemini Đang Xây Dựng Giáo Án Thích Ứng
           </Typography>
 
-          <Box sx={{ height: 28, mb: 3 }}>
-            {analysisStep === 0 && (
-              <Typography variant="body2" sx={{ color: "#059669", fontWeight: 700, fontSize: "0.95rem" }}>
-                ⚡ Bước 1/3: Đang tính toán BMR & TDEE theo thể trạng...
-              </Typography>
-            )}
-            {analysisStep === 1 && (
-              <Typography variant="body2" sx={{ color: "#0284C7", fontWeight: 700, fontSize: "0.95rem" }}>
-                🎯 Bước 2/3: Lọc danh sách video: "Low-impact, bảo vệ khớp gối, không nhảy"...
-              </Typography>
-            )}
-            {analysisStep >= 2 && (
-              <Typography variant="body2" sx={{ color: "#D97706", fontWeight: 700, fontSize: "0.95rem" }}>
-                ✨ Bước 3/3: Tối ưu cấu trúc 3 clip/buổi & Lộ trình 7 ngày tập luyện...
-              </Typography>
-            )}
-          </Box>
+          <Typography variant="body2" sx={{ color: "#64748B", maxWidth: 460, mb: 3 }}>
+            {analysisStep === 0 && "Bước 1: Tính toán mục tiêu và phân tích thể trạng..."}
+            {analysisStep === 1 && "Bước 2: Sàng lọc bài tập phù hợp thể trạng, hạn chế rủi ro chấn thương..."}
+            {analysisStep === 2 && "Bước 3: Tối ưu 7 ngày tập luyện theo cấu hình của bạn..."}
+          </Typography>
 
           <Box sx={{ width: "100%", maxWidth: 360 }}>
             <LinearProgress
@@ -340,6 +395,46 @@ export default function ProfilePage({
       ) : (
         /* Input Form Screen */
         <Box sx={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", overflowY: "auto", pr: 0.5, gap: 1.5 }}>
+          {needsOnboarding && (
+            <Card
+              sx={{
+                p: 2,
+                borderRadius: "16px",
+                bgcolor: "#F0FDF4",
+                border: "1.5px solid #86EFAC",
+                boxShadow: "0 4px 15px rgba(22, 163, 74, 0.08)",
+                display: "flex",
+                alignItems: "center",
+                gap: 2,
+                flexShrink: 0,
+              }}
+            >
+              <Box
+                sx={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: "12px",
+                  bgcolor: "#DCFCE7",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#16A34A",
+                  flexShrink: 0,
+                }}
+              >
+                <AutoAwesomeIcon />
+              </Box>
+              <Box>
+                <Typography variant="subtitle1" sx={{ fontWeight: 800, color: "#166534" }}>
+                  Bước thiết lập bắt buộc: Khởi tạo hồ sơ thể chất ban đầu 🎯
+                </Typography>
+                <Typography variant="body2" sx={{ color: "#15803D", fontSize: "0.85rem" }}>
+                  Để AI Coach Gemini có thể tính toán chính xác chỉ số BMR/TDEE và đề xuất giáo án 7 ngày thích ứng, bạn cần hoàn tất số đo cơ thể và các hạn chế chấn thương bên dưới.
+                </Typography>
+              </Box>
+            </Card>
+          )}
+
           <Box
             sx={{
               display: "grid",
@@ -349,7 +444,7 @@ export default function ProfilePage({
             }}
           >
             {/* ------------------------------------------------------------- */}
-            {/* CARD 1: Chỉ số thể chất & Mục tiêu (Profile Data)              */}
+            {/* CARD 1 (LEFT COLUMN): Hồ Sơ Thể Lực & Mục Tiêu Cá Nhân        */}
             {/* ------------------------------------------------------------- */}
             <Card
               sx={{
@@ -360,16 +455,16 @@ export default function ProfilePage({
                 boxShadow: "0 2px 10px rgba(0, 0, 0, 0.03)",
                 display: "flex",
                 flexDirection: "column",
-                gap: 1.6,
+                gap: 1.5,
               }}
             >
-              {/* Section 1: Basic Information */}
+              {/* 1. Basic Information */}
               <Box>
-                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
+                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 0.8 }}>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 0.8 }}>
-                    <PersonIcon sx={{ color: "#64748B", fontSize: 18 }} />
+                    <PersonIcon sx={{ color: "#16A34A", fontSize: 18 }} />
                     <Typography variant="subtitle2" sx={{ fontWeight: 800, color: "#0F172A", fontSize: "0.85rem" }}>
-                      Thông tin thể chất cơ bản
+                      1. Thông tin cơ bản
                     </Typography>
                   </Box>
                   <Chip
@@ -384,11 +479,23 @@ export default function ProfilePage({
                     <TextField fullWidth size="small" label="Họ và tên" name="name" value={formData.name} onChange={handleChange} />
                   </Grid>
 
-                  <Grid item xs={4} sm={2}>
-                    <TextField fullWidth size="small" label="Giới tính" value={formData.gender === "female" ? "Nữ" : "Nam"} disabled />
+                  <Grid item xs={6} sm={3}>
+                    <FormControl fullWidth size="small">
+                      <InputLabel>Giới tính</InputLabel>
+                      <Select
+                        name="gender"
+                        value={formData.gender}
+                        label="Giới tính"
+                        onChange={handleChange}
+                      >
+                        <MenuItem value="female">Nữ</MenuItem>
+                        <MenuItem value="male">Nam</MenuItem>
+                        <MenuItem value="other">Khác</MenuItem>
+                      </Select>
+                    </FormControl>
                   </Grid>
 
-                  <Grid item xs={4} sm={2}>
+                  <Grid item xs={6} sm={3}>
                     <TextField
                       fullWidth
                       size="small"
@@ -399,92 +506,301 @@ export default function ProfilePage({
                       onChange={handleChange}
                     />
                   </Grid>
-
-                  <Grid item xs={4} sm={2}>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      label="Chiều cao"
-                      name="height"
-                      type="number"
-                      value={formData.height}
-                      onChange={handleChange}
-                      InputProps={{ endAdornment: <InputAdornment position="end">cm</InputAdornment> }}
-                    />
-                  </Grid>
                 </Grid>
               </Box>
 
-              {/* Section 2: Measurements */}
+              {/* 2. Primary Fitness Goal (Compact Selectable Cards - 6 Options, Single Choice) */}
               <Box>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 0.8, mb: 1 }}>
-                  <StraightenIcon sx={{ color: "#16A34A", fontSize: 18 }} />
-                  <Typography variant="subtitle2" sx={{ fontWeight: 800, color: "#0F172A", fontSize: "0.85rem" }}>
-                    Cân nặng & Số đo 3 vòng
+                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 0.8 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.8 }}>
+                    <EmojiEventsIcon sx={{ color: "#F59E0B", fontSize: 18 }} />
+                    <Typography variant="subtitle2" sx={{ fontWeight: 800, color: "#0F172A", fontSize: "0.85rem" }}>
+                      2. Mục tiêu tập luyện
+                    </Typography>
+                  </Box>
+                  <Typography variant="caption" sx={{ color: "#059669", fontWeight: 750, fontSize: "0.68rem" }}>
+                    Chỉ chọn 1 mục tiêu
                   </Typography>
                 </Box>
 
-                <Grid container spacing={1}>
-                  <Grid item xs={6} sm={3}>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      label="Cân nặng"
-                      name="weight"
-                      type="number"
-                      value={formData.weight}
-                      onChange={handleChange}
-                      InputProps={{ endAdornment: <InputAdornment position="end">kg</InputAdornment> }}
-                    />
-                  </Grid>
-
-                  <Grid item xs={6} sm={3}>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      label="Vòng 1 (Ngực)"
-                      name="bust"
-                      type="number"
-                      value={formData.bust}
-                      onChange={handleChange}
-                      InputProps={{ endAdornment: <InputAdornment position="end">cm</InputAdornment> }}
-                    />
-                  </Grid>
-
-                  <Grid item xs={6} sm={3}>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      label="Vòng 2 (Eo)"
-                      name="waist"
-                      type="number"
-                      value={formData.waist}
-                      onChange={handleChange}
-                      InputProps={{ endAdornment: <InputAdornment position="end">cm</InputAdornment> }}
-                    />
-                  </Grid>
-
-                  <Grid item xs={6} sm={3}>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      label="Vòng 3 (Mông)"
-                      name="hips"
-                      type="number"
-                      value={formData.hips}
-                      onChange={handleChange}
-                      InputProps={{ endAdornment: <InputAdornment position="end">cm</InputAdornment> }}
-                    />
-                  </Grid>
-                </Grid>
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: { xs: "repeat(2, 1fr)", sm: "repeat(3, 1fr)" },
+                    gap: 0.8,
+                  }}
+                >
+                  {FITNESS_GOALS.map((goal) => {
+                    const isSelected = formData.fitnessGoal === goal.id;
+                    return (
+                      <Box
+                        key={goal.id}
+                        onClick={() => handleGoalSelect(goal.id)}
+                        sx={{
+                          p: "0.55rem 0.65rem",
+                          borderRadius: "10px",
+                          border: isSelected ? "1.8px solid #16A34A" : "1px solid #E2E8F0",
+                          bgcolor: isSelected ? "#F0FDF4" : "#F8FAFC",
+                          boxShadow: isSelected ? "0 2px 8px rgba(22, 163, 74, 0.15)" : "none",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 0.8,
+                          transition: "all 0.15s ease",
+                          "&:hover": {
+                            bgcolor: isSelected ? "#DCFCE7" : "#F1F5F9",
+                            borderColor: isSelected ? "#15803D" : "#CBD5E1",
+                          },
+                        }}
+                      >
+                        <Box sx={{ fontSize: "1.1rem", lineHeight: 1 }}>{goal.icon}</Box>
+                        <Box sx={{ overflow: "hidden", minWidth: 0 }}>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontWeight: isSelected ? 800 : 650,
+                              color: isSelected ? "#15803D" : "#1E293B",
+                              fontSize: "0.75rem",
+                              lineHeight: 1.2,
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                            }}
+                          >
+                            {goal.label}
+                          </Typography>
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color: isSelected ? "#16A34A" : "#64748B",
+                              fontSize: "0.65rem",
+                              display: "block",
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                            }}
+                          >
+                            {goal.desc}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    );
+                  })}
+                </Box>
               </Box>
 
-              {/* Section 3: Activity Level */}
+              {/* 3. Training Experience & Workout Preferences */}
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                {/* 3A: Training Experience (Segmented Buttons) */}
+                <Box>
+                  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 0.6 }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.8 }}>
+                      <SpeedIcon sx={{ color: "#3B82F6", fontSize: 17 }} />
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: "#0F172A", fontSize: "0.82rem" }}>
+                        3A. Kinh nghiệm tập luyện
+                      </Typography>
+                    </Box>
+                  </Box>
+
+                  {/* Segmented Button Group */}
+                  <Box
+                    sx={{
+                      display: "flex",
+                      bgcolor: "#F1F5F9",
+                      borderRadius: "10px",
+                      p: "3px",
+                      gap: "3px",
+                    }}
+                  >
+                    {EXPERIENCE_LEVELS.map((exp) => {
+                      const isSelected = formData.experience === exp.id;
+                      return (
+                        <Box
+                          key={exp.id}
+                          onClick={() => handleExperienceSelect(exp.id)}
+                          sx={{
+                            flex: 1,
+                            py: 0.7,
+                            px: 1,
+                            textAlign: "center",
+                            borderRadius: "8px",
+                            cursor: "pointer",
+                            bgcolor: isSelected ? "#FFFFFF" : "transparent",
+                            boxShadow: isSelected ? "0 2px 6px rgba(0, 0, 0, 0.08)" : "none",
+                            color: isSelected ? "#15803D" : "#64748B",
+                            fontWeight: isSelected ? 800 : 600,
+                            fontSize: "0.75rem",
+                            transition: "all 0.15s ease",
+                            "&:hover": {
+                              color: isSelected ? "#15803D" : "#1F2937",
+                            },
+                          }}
+                        >
+                          {exp.label}
+                          <Typography
+                            component="span"
+                            sx={{
+                              display: { xs: "none", sm: "inline" },
+                              fontSize: "0.65rem",
+                              color: isSelected ? "#16A34A" : "#94A3B8",
+                              ml: 0.5,
+                              fontWeight: 500,
+                            }}
+                          >
+                            ({exp.desc})
+                          </Typography>
+                        </Box>
+                      );
+                    })}
+                  </Box>
+                </Box>
+
+                {/* 3B: Workout Preferences (Compact Chips - Max 3) */}
+                <Box>
+                  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 0.6 }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.8 }}>
+                      <FitnessCenterIcon sx={{ color: "#6366F1", fontSize: 17 }} />
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: "#0F172A", fontSize: "0.82rem" }}>
+                        3B. Thể loại bài tập ưu tiên
+                      </Typography>
+                    </Box>
+                    <Typography variant="caption" sx={{ color: "#4F46E5", fontWeight: 700, fontSize: "0.68rem" }}>
+                      Đã chọn ({formData.workoutPreferences?.length || 0}/3)
+                    </Typography>
+                  </Box>
+
+                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.6 }}>
+                    {WORKOUT_PREFERENCES.map((pref) => {
+                      const isSelected = formData.workoutPreferences?.includes(pref.id);
+                      const isMaxReached = (formData.workoutPreferences?.length || 0) >= 3 && !isSelected;
+
+                      return (
+                        <Tooltip
+                          key={pref.id}
+                          title={isMaxReached ? "Đã chọn tối đa 3 thể loại" : pref.desc}
+                          arrow
+                        >
+                          <span>
+                            <Chip
+                              label={pref.label}
+                              clickable={!isMaxReached}
+                              onClick={() => toggleWorkoutPreference(pref.id)}
+                              sx={{
+                                borderRadius: "8px",
+                                fontWeight: isSelected ? 800 : 500,
+                                fontSize: "0.72rem",
+                                height: 26,
+                                bgcolor: isSelected ? "#EEF2FF" : "#F8FAFC",
+                                color: isSelected ? "#4338CA" : isMaxReached ? "#94A3B8" : "#334155",
+                                border: isSelected ? "1.5px solid #6366F1" : "1px solid #E2E8F0",
+                                opacity: isMaxReached ? 0.6 : 1,
+                                transition: "all 0.15s ease",
+                                "&:hover": {
+                                  bgcolor: isSelected ? "#E0E7FF" : isMaxReached ? "#F8FAFC" : "#F1F5F9",
+                                },
+                              }}
+                            />
+                          </span>
+                        </Tooltip>
+                      );
+                    })}
+                  </Box>
+                </Box>
+              </Box>
+
+              {/* 4. Body Measurements */}
               <Box>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 0.8, mb: 1 }}>
+                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 0.8 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.8 }}>
+                    <StraightenIcon sx={{ color: "#16A34A", fontSize: 18 }} />
+                    <Typography variant="subtitle2" sx={{ fontWeight: 800, color: "#0F172A", fontSize: "0.85rem" }}>
+                      4. Chỉ số cơ thể
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: "flex", gap: 0.6 }}>
+                    <Chip
+                      label={`BMI: ${Number(bmi || 0).toFixed(1)}`}
+                      size="small"
+                      sx={{ height: 18, fontSize: "0.62rem", fontWeight: 800, bgcolor: "#ECFDF5", color: "#059669" }}
+                    />
+                    <Chip
+                      label={`TDEE: ~${tdee} kcal`}
+                      size="small"
+                      sx={{ height: 18, fontSize: "0.62rem", fontWeight: 800, bgcolor: "#EFF6FF", color: "#2563EB" }}
+                    />
+                  </Box>
+                </Box>
+
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: { xs: "repeat(2, 1fr)", sm: "repeat(3, 1fr)", md: "repeat(5, 1fr)" },
+                    gap: 1,
+                  }}
+                >
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="Chiều cao"
+                    name="height"
+                    type="number"
+                    value={formData.height}
+                    onChange={handleChange}
+                    InputProps={{ endAdornment: <InputAdornment position="end">cm</InputAdornment> }}
+                  />
+
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="Cân nặng"
+                    name="weight"
+                    type="number"
+                    value={formData.weight}
+                    onChange={handleChange}
+                    InputProps={{ endAdornment: <InputAdornment position="end">kg</InputAdornment> }}
+                  />
+
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="Vòng 1 (Ngực)"
+                    name="bust"
+                    type="number"
+                    value={formData.bust}
+                    onChange={handleChange}
+                    InputProps={{ endAdornment: <InputAdornment position="end">cm</InputAdornment> }}
+                  />
+
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="Vòng 2 (Eo)"
+                    name="waist"
+                    type="number"
+                    value={formData.waist}
+                    onChange={handleChange}
+                    InputProps={{ endAdornment: <InputAdornment position="end">cm</InputAdornment> }}
+                  />
+
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="Vòng 3 (Mông)"
+                    name="hips"
+                    type="number"
+                    value={formData.hips}
+                    onChange={handleChange}
+                    InputProps={{ endAdornment: <InputAdornment position="end">cm</InputAdornment> }}
+                  />
+                </Box>
+              </Box>
+
+              {/* 5. Activity Level */}
+              <Box>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.8, mb: 0.6 }}>
                   <DirectionsRunIcon sx={{ color: "#D97706", fontSize: 18 }} />
                   <Typography variant="subtitle2" sx={{ fontWeight: 800, color: "#0F172A", fontSize: "0.85rem" }}>
-                    Mức độ vận động hàng ngày
+                    5. Mức độ vận động hàng ngày
                   </Typography>
                 </Box>
 
@@ -499,35 +815,18 @@ export default function ProfilePage({
                     {Object.entries(ACTIVITY_MULTIPLIERS).map(([key, item]) => (
                       <MenuItem key={key} value={key}>
                         <Box sx={{ display: "flex", justifyContent: "space-between", width: "100%", pr: 1 }}>
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>{item.label}</Typography>
-                          <Typography variant="caption" color="text.secondary">{item.desc}</Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 600, fontSize: "0.8rem" }}>{item.label}</Typography>
+                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.72rem" }}>{item.desc}</Typography>
                         </Box>
                       </MenuItem>
                     ))}
                   </Select>
                 </FormControl>
               </Box>
-
-              {/* Section 4: Notes for AI */}
-              <Box>
-                <TextField
-                  fullWidth
-                  size="small"
-                  multiline
-                  rows={2}
-                  label="Ghi chú nguyện vọng riêng cho AI Coach"
-                  name="customWishes"
-                  value={formData.customWishes}
-                  onChange={handleChange}
-                  placeholder="Ví dụ: Giảm 3cm eo trước đám cưới tháng sau; khớp gối yếu tránh nhảy cao; bài tập dưới 30 phút..."
-                  helperText="AI sẽ ưu tiên lọc các video YouTube chuẩn xác theo đúng mong muốn của bạn."
-                  FormHelperTextProps={{ style: { fontSize: "0.65rem", marginTop: 2, color: "#64748B" } }}
-                />
-              </Box>
             </Card>
 
             {/* ------------------------------------------------------------- */}
-            {/* CARD 2: Cấu hình lịch tập & Ràng buộc YouTube                  */}
+            {/* CARD 2 (RIGHT COLUMN): Cấu Hình Lịch Tập & Ràng Buộc AI       */}
             {/* ------------------------------------------------------------- */}
             <Card
               sx={{
@@ -538,7 +837,7 @@ export default function ProfilePage({
                 boxShadow: "0 2px 10px rgba(0, 0, 0, 0.03)",
                 display: "flex",
                 flexDirection: "column",
-                gap: 1.8,
+                gap: 1.5,
               }}
             >
               <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -548,11 +847,7 @@ export default function ProfilePage({
                     Cấu hình Lịch tập & Ràng buộc AI
                   </Typography>
                 </Box>
-                <Chip
-                  label="Flow 3 Clip Chuẩn Y Khoa"
-                  size="small"
-                  sx={{ height: 20, fontSize: "0.65rem", fontWeight: 700, bgcolor: "#ECFDF5", color: "#059669" }}
-                />
+
               </Box>
 
               {/* 1. Chọn ngày tập trong tuần: 7 Chip tròn toggle */}
@@ -561,42 +856,40 @@ export default function ProfilePage({
                   <Typography variant="caption" sx={{ fontWeight: 800, color: "#334155", fontSize: "0.75rem", textTransform: "uppercase" }}>
                     1. Ngày tập trong tuần
                   </Typography>
-                  <Typography variant="caption" sx={{ fontWeight: 700, color: "#16A34A", fontSize: "0.72rem" }}>
-                    {currentConfig.selectedDays.length} ngày tập • {7 - currentConfig.selectedDays.length} ngày nghỉ
-                  </Typography>
+
                 </Box>
 
                 <Box sx={{ display: "flex", gap: 1, justifyContent: "space-between" }}>
-                  {DAYS_OF_WEEK.map((day) => {
-                    const isSelected = currentConfig.selectedDays.includes(day.dayIndex);
+                  {DAYS_OF_WEEK.map((d) => {
+                    const isSelected = currentConfig.selectedDays.includes(d.dayIndex);
                     return (
                       <Box
-                        key={day.dayIndex}
-                        onClick={() => toggleDay(day.dayIndex)}
+                        key={d.dayIndex}
+                        onClick={() => toggleDay(d.dayIndex)}
                         sx={{
                           flex: 1,
-                          height: 48,
-                          borderRadius: 3,
+                          py: 1,
+                          borderRadius: "12px",
+                          border: isSelected ? "1.5px solid #16A34A" : "1px solid #E2E8F0",
+                          bgcolor: isSelected ? "#16A34A" : "#F8FAFC",
+                          color: isSelected ? "#FFFFFF" : "#64748B",
+                          cursor: "pointer",
                           display: "flex",
                           flexDirection: "column",
                           alignItems: "center",
                           justifyContent: "center",
-                          cursor: "pointer",
-                          transition: "all 0.18s ease",
-                          bgcolor: isSelected ? "#10B981" : "#F8FAFC",
-                          color: isSelected ? "#FFFFFF" : "#64748B",
-                          border: isSelected ? "1.5px solid #059669" : "1px dashed #CBD5E1",
-                          boxShadow: isSelected ? "0 4px 10px rgba(16, 185, 129, 0.3)" : "none",
+                          transition: "all 0.15s ease",
+                          boxShadow: isSelected ? "0 4px 10px rgba(22, 163, 74, 0.25)" : "none",
                           "&:hover": {
+                            bgcolor: isSelected ? "#15803D" : "#F1F5F9",
                             transform: "translateY(-1px)",
-                            borderColor: "#10B981",
                           },
                         }}
                       >
-                        <Typography variant="body2" sx={{ fontWeight: 800, fontSize: "0.85rem", lineHeight: 1.1 }}>
-                          {day.label}
+                        <Typography sx={{ fontWeight: 800, fontSize: "0.85rem", lineHeight: 1.1 }}>
+                          {d.label}
                         </Typography>
-                        <Typography variant="caption" sx={{ fontSize: "0.55rem", opacity: isSelected ? 0.95 : 0.7, fontWeight: 600 }}>
+                        <Typography sx={{ fontSize: "0.6rem", opacity: isSelected ? 0.9 : 0.6, mt: 0.2 }}>
                           {isSelected ? "Tập" : "Nghỉ"}
                         </Typography>
                       </Box>
@@ -605,18 +898,13 @@ export default function ProfilePage({
                 </Box>
               </Box>
 
-              {/* 2. Thời lượng tập mỗi buổi */}
+              {/* 2. Chọn thời lượng mỗi buổi tập */}
               <Box>
                 <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 0.8 }}>
                   <Typography variant="caption" sx={{ fontWeight: 800, color: "#334155", fontSize: "0.75rem", textTransform: "uppercase" }}>
                     2. Thời lượng mỗi buổi tập
                   </Typography>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.4 }}>
-                    <AccessTimeIcon sx={{ fontSize: 13, color: "#64748B" }} />
-                    <Typography variant="caption" sx={{ color: "#64748B", fontSize: "0.68rem" }}>
-                      Khởi động + Bài chính + Giãn cơ
-                    </Typography>
-                  </Box>
+                  <AccessTimeIcon sx={{ color: "#64748B", fontSize: 16 }} />
                 </Box>
 
                 <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1 }}>
@@ -627,20 +915,21 @@ export default function ProfilePage({
                         key={opt.id}
                         onClick={() => setCurrentConfig((prev) => ({ ...prev, duration: opt.id }))}
                         sx={{
-                          p: 1,
-                          borderRadius: 2.5,
+                          p: 1.2,
+                          borderRadius: "12px",
+                          border: isSelected ? "1.5px solid #16A34A" : "1px solid #E2E8F0",
+                          bgcolor: isSelected ? "#F0FDF4" : "#F8FAFC",
                           cursor: "pointer",
-                          textAlign: "center",
-                          border: isSelected ? "1.5px solid #10B981" : "1px solid #E2E8F0",
-                          bgcolor: isSelected ? "#ECFDF5" : "#FFFFFF",
                           transition: "all 0.15s ease",
-                          "&:hover": { borderColor: "#10B981" },
+                          "&:hover": {
+                            bgcolor: isSelected ? "#DCFCE7" : "#F1F5F9",
+                          },
                         }}
                       >
-                        <Typography variant="body2" sx={{ fontWeight: 800, color: isSelected ? "#059669" : "#0F172A", fontSize: "0.82rem" }}>
+                        <Typography variant="body2" sx={{ fontWeight: isSelected ? 800 : 600, color: isSelected ? "#15803D" : "#1F2937", fontSize: "0.8rem" }}>
                           {opt.label}
                         </Typography>
-                        <Typography variant="caption" sx={{ fontSize: "0.62rem", color: "#64748B", display: "block" }}>
+                        <Typography variant="caption" sx={{ color: "#64748B", fontSize: "0.68rem", display: "block" }}>
                           {opt.desc}
                         </Typography>
                       </Box>
@@ -655,9 +944,7 @@ export default function ProfilePage({
                   <Typography variant="caption" sx={{ fontWeight: 800, color: "#334155", fontSize: "0.75rem", textTransform: "uppercase" }}>
                     3. Hạn chế thể chất & Chấn thương
                   </Typography>
-                  <Typography variant="caption" sx={{ color: "#E11D48", fontWeight: 700, fontSize: "0.68rem" }}>
-                    Bộ lọc loại trừ (Negative Keywords)
-                  </Typography>
+
                 </Box>
 
                 <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.8 }}>
@@ -673,7 +960,7 @@ export default function ProfilePage({
                           borderRadius: "10px",
                           fontWeight: isSelected ? 800 : 500,
                           fontSize: "0.72rem",
-                          bgcolor: isSelected ? "#FEE2E2" : "#F8FAFC",
+                          bgcolor: isSelected ? "#FFE4E6" : "#F8FAFC",
                           color: isSelected ? "#BE123C" : "#334155",
                           border: isSelected ? "1.5px solid #F43F5E" : "1px solid #E2E8F0",
                           transition: "all 0.15s ease",
@@ -693,9 +980,7 @@ export default function ProfilePage({
                   <Typography variant="caption" sx={{ fontWeight: 800, color: "#334155", fontSize: "0.75rem", textTransform: "uppercase" }}>
                     4. Dụng cụ sẵn có
                   </Typography>
-                  <Typography variant="caption" sx={{ color: "#2563EB", fontWeight: 700, fontSize: "0.68rem" }}>
-                    Bộ lọc điều kiện (Attribute Filter)
-                  </Typography>
+
                 </Box>
 
                 <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.8 }}>
@@ -724,6 +1009,29 @@ export default function ProfilePage({
                   })}
                 </Box>
               </Box>
+
+              {/* 5. Ghi chú & Nguyện vọng riêng cho AI Coach */}
+              <Box>
+                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 0.8 }}>
+                  <Typography variant="caption" sx={{ fontWeight: 800, color: "#334155", fontSize: "0.75rem", textTransform: "uppercase" }}>
+                    5. Ghi chú & Nguyện vọng riêng cho AI Coach
+                  </Typography>
+
+                </Box>
+
+                <TextField
+                  fullWidth
+                  size="small"
+                  multiline
+                  rows={2.5}
+                  name="customWishes"
+                  value={formData.customWishes}
+                  onChange={handleChange}
+                  placeholder="Ví dụ: Giảm 3cm eo trước đám cưới tháng sau; khớp gối yếu tránh nhảy cao; ưu tiên bài tập dưới 30 phút..."
+
+                  FormHelperTextProps={{ style: { fontSize: "0.65rem", marginTop: 2, color: "#64748B" } }}
+                />
+              </Box>
             </Card>
           </Box>
 
@@ -748,10 +1056,10 @@ export default function ProfilePage({
           >
             <Box>
               <Typography variant="subtitle2" sx={{ fontWeight: 850, color: "#0F172A", fontSize: "0.9rem" }}>
-                {currentConfig.selectedDays.length} ngày tập • {currentConfig.duration}p/buổi
+                {currentConfig.selectedDays.length} ngày tập • {currentConfig.duration}p/buổi • Mục tiêu: {selectedGoalName}
               </Typography>
               <Typography variant="caption" sx={{ color: "#64748B", fontSize: "0.72rem" }}>
-                {currentConfig.limitations.length} hạn chế thể chất • {currentConfig.equipment.length} dụng cụ sẵn có
+                Kinh nghiệm: {selectedExpName} • {currentConfig.limitations.length} hạn chế thể chất • {currentConfig.equipment.length} dụng cụ sẵn có
               </Typography>
             </Box>
 

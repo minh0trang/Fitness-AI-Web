@@ -49,11 +49,14 @@ const NAV_ITEMS = [
   },
 ];
 
-export default function Sidebar({ mobileOpen, onMobileClose, onLogout }) {
+export default function Sidebar({ mobileOpen, onMobileClose, onLogout, needsOnboarding }) {
   const location = useLocation();
   const navigate = useNavigate();
 
   const handleNavClick = (path) => {
+    if (needsOnboarding && path !== "/profile") {
+      return;
+    }
     navigate(path);
     if (onMobileClose) onMobileClose();
   };
@@ -66,27 +69,31 @@ export default function Sidebar({ mobileOpen, onMobileClose, onLogout }) {
           const isActive =
             location.pathname === item.path ||
             (item.path === "/dashboard" && location.pathname === "/");
+          const isLocked = needsOnboarding && item.path !== "/profile";
 
           return (
             <ListItem key={item.path} disablePadding sx={{ mb: 1 }}>
               <ListItemButton
+                disabled={isLocked}
                 onClick={() => handleNavClick(item.path)}
                 sx={{
                   borderRadius: 2.5,
                   py: 1.3,
                   px: 2,
                   bgcolor: isActive ? "#DCFCE7" : "transparent",
-                  color: isActive ? "#15803D" : "#4B5563",
+                  color: isActive ? "#15803D" : isLocked ? "#9CA3AF" : "#4B5563",
+                  opacity: isLocked ? 0.6 : 1,
+                  cursor: isLocked ? "not-allowed" : "pointer",
                   transition: "all 0.15s ease-in-out",
                   "&:hover": {
-                    bgcolor: isActive ? "#DCFCE7" : "#F3F4F6",
-                    color: isActive ? "#15803D" : "#1F2937",
+                    bgcolor: isLocked ? "transparent" : isActive ? "#DCFCE7" : "#F3F4F6",
+                    color: isLocked ? "#9CA3AF" : isActive ? "#15803D" : "#1F2937",
                   },
                 }}
               >
                 <ListItemIcon
                   sx={{
-                    color: isActive ? "#16A34A" : "#6B7280",
+                    color: isActive ? "#16A34A" : isLocked ? "#D1D5DB" : "#6B7280",
                     minWidth: 38,
                   }}
                 >
@@ -99,7 +106,32 @@ export default function Sidebar({ mobileOpen, onMobileClose, onLogout }) {
                     fontSize: "0.95rem",
                   }}
                 />
-                {item.badge && (
+                {isLocked ? (
+                  <Chip
+                    label="Khóa"
+                    size="small"
+                    sx={{
+                      height: 18,
+                      fontSize: "0.6rem",
+                      fontWeight: 700,
+                      bgcolor: "#F3F4F6",
+                      color: "#9CA3AF",
+                    }}
+                  />
+                ) : item.path === "/profile" && needsOnboarding ? (
+                  <Chip
+                    label="Cần điền"
+                    size="small"
+                    sx={{
+                      height: 18,
+                      fontSize: "0.62rem",
+                      fontWeight: 800,
+                      bgcolor: "#FEF2F2",
+                      color: "#DC2626",
+                      border: "1px solid #FECACA",
+                    }}
+                  />
+                ) : item.badge ? (
                   <Chip
                     label={item.badge}
                     size="small"
@@ -111,7 +143,7 @@ export default function Sidebar({ mobileOpen, onMobileClose, onLogout }) {
                       color: isActive ? "#FFFFFF" : "#059669",
                     }}
                   />
-                )}
+                ) : null}
               </ListItemButton>
             </ListItem>
           );

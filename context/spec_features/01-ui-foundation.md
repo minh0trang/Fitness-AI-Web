@@ -73,24 +73,29 @@ Sidebar items:
   - Clip 1: Khởi động (Warm-up 3–5 min)
   - Clip 2: Bài tập chính (Main 15–25 min)
   - Clip 3: Giãn cơ (Cool-down 5–10 min)
+- Synchronized playlist header showing `🎯 Core · 🔥 Moderate · ⏱ 42 phút`.
 - Embedded YouTube player with theater mode, rest timer, and video completion toggle.
 - Rest day isolation with recovery guidance.
-- Workout journal dialog with feeling selector, rating, notes, and check-in photo.
+- Scrollable Workout Journal Dialog (`WorkoutJournalDialog.jsx`) with RPE difficulty (1-5), energy (1-5), physical safety pain survey (`PAIN_AREAS`), optional photo check-in, personal notes, and sticky bottom action buttons.
 
 ### Kế hoạch AI (`AiPlanPage.jsx` at `/ai-plan`)
 
-- Dedicated page for AI generated workout plan.
+- Dedicated page for AI generated workout plan (workout-centric, non-nutrition).
 - Radar scan pulse animation with sequential micro-copy (2.4s).
-- AI Coach Evaluation Banner (BMR, TDEE, Deficit target, pastel Coach advice).
-- 7-day interactive weekly plan breakdown with 3 YouTube clips per session.
+- Consolidated 1-line workout goal & specs header:
+  `🎯 Mục tiêu: Giảm vòng eo  |  🏋️ Beginner · ⏱ 30–45 phút/buổi · 📅 5 buổi/tuần`.
+- Practical AI Coach advice box prioritizing Low-Impact and joint-safe routines.
+- Weekly overview summary line (`🗓️ Tuần này: 5 buổi · ~190 phút · Core · Lower Body · Full Body`).
+- 7-day interactive weekly plan breakdown with 3 YouTube clips per session and 3-dimensional workout status chip (`🎯 Core · 🔥 Moderate · ⏱ 42 phút`).
 - Action controls: "Áp Dụng Lịch Tập Này & Bắt Đầu", "Chỉnh Sửa Hồ Sơ & Cấu Hình", "AI Tạo Lại Lịch Khác".
 
 ### Fitness Profile (`ProfilePage.jsx` at `/profile`)
 
+- Streamlined layout with simplified section titles ("1. Thông tin cơ bản", "2. Mục tiêu tập luyện", "3. Kinh nghiệm", "4. Chỉ số cơ thể").
 - **Card 1: Chỉ số thể chất & Mục tiêu**:
   - Personal info (name, gender, age, height, weight).
   - Body measurements (bust, waist, hips).
-  - Daily activity level.
+  - Daily activity level and primary fitness goal.
   - Custom wishes & notes for AI Coach.
 - **Card 2: Cấu hình Lịch tập & Ràng buộc AI**:
   - Workout days in week (7 circular toggle chips T2–CN).

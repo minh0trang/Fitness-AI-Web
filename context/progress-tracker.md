@@ -42,11 +42,64 @@
 - **Authentication & User Registration Flow (Keycloak IAM)**:
   - Enabled realm-level user registration (`registrationAllowed=true`) in `zero-fitness`.
   - Added dedicated "Tạo Tài Khoản Mới (Đăng Ký)" button in `LoginPage.jsx` ([LoginPage.jsx](file:///d:/Fitness-AI-Web/fitness-app-frontend/src/pages/LoginPage.jsx)).
-  - Configured `handleRegister` in `App.jsx` ([App.jsx](file:///d:/Fitness-AI-Web/fitness-app-frontend/src/App.jsx)) utilizing PKCE with `prompt: "create"` to route straight to Keycloak registration with automatic token exchange upon completion.
+- **Feature 02: User Profile Sync & Mandatory Onboarding**:
+  - Defined strict Java Enums: `Gender`, `ActivityLevel`, `FitnessGoal`, `PhysicalLimitation`, `EquipmentType`.
+  - Built `UserProfile` JPA Entity in `userservice` with one-to-one mapping and collection tables.
+  - Implemented `POST /api/users/sync`, `GET /api/users/{keycloakId}/profile`, and `PUT /api/users/{keycloakId}/profile`.
+  - Created `userService.js` for API integration via API Gateway.
+  - Built Onboarding Guard in `App.jsx`, `Sidebar.jsx`, and `ProfilePage.jsx` locking app access until initial profile is completed.
+- **UI Flow Alignment & Workout-Centric Architecture (Latest)**:
+  - **Non-Nutrition Pivot & Header Specs (`AiPlanPage.jsx`)**:
+    - Removed nutrition/metabolic calorie chips (`BMR / TDEE / Khuyến nghị calo`) from the AI Plan Header as the platform focuses purely on workout execution, physical conditioning, and movement rather than nutrition.
+    - Consolidated workout specs into a clean single-row header:
+      `🎯 Mục tiêu: Giảm vòng eo  |  🏋️ Beginner · ⏱ 30–45 phút/buổi · 📅 5 buổi/tuần`.
+  - **Weekly Overview Summary (`AiPlanPage.jsx`)**:
+    - Added a sleek single-line weekly overview directly above the 7-day selector without cluttered charts:
+      `Tuần này: 5 buổi · ~190 phút · Core · Lower Body · Full Body`.
+  - **3-Dimensional Per-Workout Intensity & Muscle Focus (`AiPlanPage.jsx` & `SchedulePage.jsx`)**:
+    - Created shared helper `getWorkoutDayMeta(day)` in `mockWorkouts.js` extracting `{ focus, intensity, minutes }`.
+    - Day header renders prominent status chip: `🎯 Core · 🔥 Moderate · ⏱ 42 phút`.
+    - Day selector buttons in 7-day bar show duration & intensity (`42p · Moderate`) instead of raw calorie approximations.
+    - Synced playlist header on `SchedulePage.jsx` with the same `🎯 Core · 🔥 Moderate · ⏱ 42 phút` format.
+  - **Medical Terminology Moderation**:
+    - Replaced unverified medical claims with professional fitness coaching terms:
+      - *"7 Ngày Chuẩn Y Khoa"* ➔ **AI Weekly Workout Plan (7 ngày)**
+      - *"Cấu trúc chuẩn y khoa: Khởi động ➔ Bài chính ➔ Giãn cơ"* ➔ **Cấu trúc buổi tập: Khởi động → Bài chính → Giãn cơ**
+      - *"bảo vệ tuyệt đối khớp gối"* ➔ *"giảm tối đa áp lực lên khớp gối theo thể trạng của bạn"*
+      - *"Lời dặn của AI Coach"* ➔ *"Gợi ý từ AI Coach"*
+    - Synced radar animation microcopy in `ProfilePage.jsx` and features in `LoginPage.jsx`.
+  - **Workout Journal Dialog Overhaul (`WorkoutJournalDialog.jsx`)**:
+    - Fixed undefined label bug on Difficulty (1-5 RPE Bolt icon) and Energy (1-5 Heart icon) options by removing nonexistent `.desc` accessors.
+    - Implemented scrollable modal structure (`maxHeight: "90vh"` on Dialog Paper, `overflowY: "auto"` on `DialogContent` with custom styled slim scrollbar).
+    - Fixed sticky bottom `DialogActions` footer so "Bỏ qua" and "Lưu Vào Nhật Ký" action buttons remain perpetually visible and clickable regardless of expanded photo uploads or long personal journal notes.
+    - Integrated multi-dimensional feedback flow: RPE Difficulty, Energy level, Physical pain/discomfort survey (`PAIN_AREAS`), Optional Photo check-in, Personal notes, and Encouragement summary screen.
+  - **Profile Page UI Streamlining (`ProfilePage.jsx`)**:
+    - Cleaned up verbose headers ("1. Thông tin cơ bản", "2. Mục tiêu tập luyện", "4. Chỉ số cơ thể").
+    - Removed redundant chip tags to improve scanning readability.
+  - **Progress Tracking & Workout Journal Heatmap (`ProgressPage.jsx` at `/progress`)**:
+    - **Energy-Based Calendar Heatmap (Độ đậm nhạt theo Sức khỏe)**:
+      - Each completed calendar day's background and border shade dynamically render based on post-workout health & vitality (`energy` scale 1-5):
+        - `Level 1` (Kiệt sức): `#F0FDF4` (Xanh siêu nhạt)
+        - `Level 2` (Khá mệt): `#DCFCE7`
+        - `Level 3` (Bình thường): `#A7F3D0`
+        - `Level 4` (Dồi dào): `#34D399`
+        - `Level 5` (Bùng nổ): `linear-gradient(135deg, #10B981, #059669)` (Xanh ngọc lục bảo đậm rực rỡ)
+      - Integrated interactive Legend bar displaying the 5 energy levels with visual swatches.
+      - Live reactivity: automatically merges dynamic submissions from `journalEntries` into the calendar state in real time.
+    - **Post-Workout Modal Mirroring (`Day Details Modal`)**:
+      - Day detail modal when clicking any completed calendar day is 100% aligned with the post-workout journal dialog (`WorkoutJournalDialog.jsx`):
+        - Workout banner with completion trophy, workout title, duration, and calories burned.
+        - **Mức độ gắng sức (RPE)**: 1-5 lightning bolt scale with exact difficulty label.
+        - **Sức khỏe & Năng lượng**: 1-5 heart scale with energy pill badge matching the day cell tone.
+        - **Khảo sát chấn thương & Đau mỏi**: Status indicator and pain area tags (Khớp gối, Lưng dưới, Cổ chân, etc.).
+        - **Ảnh Check-in**: Visual photo preview card if user uploaded progress photos.
+        - **Nhật ký cá nhân**: User notes formatted in an elegant quote block.
+        - **Gợi ý từ AI Coach**: Recovery and encouragement advice banner.
+        - Scrollable dialog body with styled slim scrollbar and full responsive layout.
 
 ## In Progress
 
-- Connecting frontend Weekly Check-in flow to backend APIs and AI Gemini plan generation.
+- Connecting frontend Weekly Check-in flow to backend AI Gemini plan generation based on the active UI flow.
 
 ## Next Up
 

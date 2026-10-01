@@ -14,6 +14,7 @@ import SelfImprovementIcon from "@mui/icons-material/SelfImprovement";
 import HourglassBottomIcon from "@mui/icons-material/HourglassBottom";
 import YouTubePlayer from "../components/workout/YouTubePlayer";
 import WorkoutJournalDialog from "../components/workout/WorkoutJournalDialog";
+import { getWorkoutDayMeta } from "../data/mockWorkouts";
 
 export default function SchedulePage({ schedule, onCompleteWorkout }) {
   const defaultIndex = schedule.findIndex((s) => s.status === "today");
@@ -222,9 +223,18 @@ export default function SchedulePage({ schedule, onCompleteWorkout }) {
                   <Typography variant="subtitle2" sx={{ fontWeight: 800, color: "#0F172A", lineHeight: 1.2, fontSize: "0.88rem" }}>
                     Danh Sách Bài Tập ({playlist.length} video)
                   </Typography>
-                  <Typography variant="caption" sx={{ fontWeight: 700, color: "#059669", fontSize: "0.72rem" }}>
-                    🔥 ~{currentRoutine.totalCalories} kcal • {currentRoutine.totalMinutes} phút
-                  </Typography>
+                  {(() => {
+                    const dayMeta = getWorkoutDayMeta(currentRoutine);
+                    return dayMeta ? (
+                      <Typography variant="caption" sx={{ fontWeight: 700, color: "#059669", fontSize: "0.72rem" }}>
+                        🎯 {dayMeta.focus} · 🔥 {dayMeta.intensity} · ⏱ {currentRoutine.totalMinutes} phút
+                      </Typography>
+                    ) : (
+                      <Typography variant="caption" sx={{ fontWeight: 700, color: "#059669", fontSize: "0.72rem" }}>
+                        ⏱ {currentRoutine.totalMinutes} phút
+                      </Typography>
+                    );
+                  })()}
                 </Box>
 
                 <Button

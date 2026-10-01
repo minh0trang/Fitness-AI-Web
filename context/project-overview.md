@@ -65,11 +65,17 @@ The system operates on an iterative **Weekly Adaptive AI Coaching Cycle**, ensur
 
 ### 2. Adaptive AI Workout Plan Generation & Review (`AiPlanPage.jsx`)
 
-- Dedicated AI Workout Plan Page at `/ai-plan`:
-  - Radar scan pulse animation with sequential micro-copy (BMR/TDEE calculation -> Video filtering -> 7-day schedule optimization).
-  - AI Coach evaluation banner with metabolic badges and personalized pastel advice box.
-  - 7-day interactive weekly plan with standard medical 3-clip sequence:
-    - Clip 1 (Khởi động / Warm-up): 3–5 min joint activation & injury protection.
+- Dedicated AI Workout Plan Page at `/ai-plan` (Pure workout & movement focus, non-nutrition):
+  - Radar scan pulse animation with sequential micro-copy (Objective analysis -> Video filtering -> 7-day schedule optimization).
+  - AI Weekly Workout Plan Header with 1-line consolidated workout specifications:
+    `🎯 Mục tiêu: Giảm vòng eo | 🏋️ Beginner · ⏱ 30–45 phút/buổi · 📅 5 buổi/tuần`.
+  - Gentle, practical AI Coach recommendation box prioritizing Low-Impact and joint-safe routines.
+  - Weekly Overview line directly above the day selector:
+    `🗓️ Tuần này: 5 buổi · ~190 phút · Core · Lower Body · Full Body` (chartless, highly scannable).
+  - 7-day interactive weekly plan breakdown with clear 3-dimensional workout metrics:
+    `🎯 [Focus Area] · 🔥 [Intensity] · ⏱ [Duration] phút` (e.g. `🎯 Core · 🔥 Moderate · ⏱ 42 phút`).
+  - Standard 3-phase structured workout sequence per session:
+    - Clip 1 (Khởi động / Warm-up): 3–5 min joint activation & movement preparation.
     - Clip 2 (Bài tập chính / Main): 15–25 min targeted exercise (Cardio, HIIT, Pilates, Strength).
     - Clip 3 (Giãn cơ / Cool-down): 5–10 min heart rate recovery & muscle relaxation.
   - Actionable plan controls: "Áp Dụng Lịch Tập Này & Bắt Đầu", "Chỉnh Sửa Hồ Sơ & Cấu Hình", "AI Tạo Lại Lịch Khác".
@@ -77,9 +83,10 @@ The system operates on an iterative **Weekly Adaptive AI Coaching Cycle**, ensur
 ### 3. Weekly Workout Plan & Schedule (`SchedulePage.jsx`)
 
 - Full 100% width 1-week timeline bar (T2 to CN) with status chips (completed, today, upcoming, rest).
+- Playlist header displays synchronized 3-metric summary (`🎯 Core · 🔥 Moderate · ⏱ 42 phút`).
 - Multi-video playlist execution player supporting YouTube embeds.
-- Rest day isolation with recovery, hydration, and nutrition tips.
-- Workout journal dialog for logging perceived fatigue, ratings, and check-in photos.
+- Rest day isolation with recovery guidance.
+- Scrollable Workout Journal Dialog (`WorkoutJournalDialog.jsx`) with RPE difficulty (1-5), energy levels (1-5), physical safety pain survey (`PAIN_AREAS`), optional body check-in photo, and sticky action buttons.
 
 ### 4. Guided Workout & Execution
 
