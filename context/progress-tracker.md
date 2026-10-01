@@ -108,10 +108,23 @@
   - **Feature Spec 03: F02 — WeeklyPlan Domain ([context/spec_features/03-weekly-plan-domain.md](file:///d:/Fitness-AI-Web/context/spec_features/03-weekly-plan-domain.md))**:
     - Finalized 4 core principles: Create ≠ Apply (Preview vs Active), Immutable Active Plans, Copy-on-Reuse, Dynamic 7-day mid-week onboarding boundary.
     - Specified full lifecycle, dynamic status derivation, MongoDB schema, and 5 core endpoints.
+  - **F02 — WeeklyPlan Domain Implementation (`activityservice`)**:
+    - Built MongoDB Documents: `WeeklyPlan`, `WorkoutDay`, `WorkoutExercise`, and `ExercisePhase` (WARMUP, MAIN, COOLDOWN).
+    - Built `WeeklyPlanRepository` supporting active plan lookups.
+    - Implemented `WeeklyPlanService`:
+      - `createPreviewPlan()`: Enforces **Create ≠ Apply** (`isActive = false` by default).
+      - `applyPlan()`: Activates chosen plan, deactivates older active plans, and sets `trainingStartDate`.
+      - `applyAsNew()`: Deep copies old plan to the current calendar week without mutating past history.
+      - `getActivePlan()`: Dynamically calculates day status (`REST`, `NOT_STARTED` for mid-week onboarding, `TODAY`, `UPCOMING`) without saving static status to database.
+    - Implemented `WeeklyPlanController` exposing REST APIs.
+    - **Automated Testing Suite (100% Passed)**:
+      - [WeeklyPlanServiceTest.java](file:///d:/Fitness-AI-Web/activityservice/src/test/java/com/fitness/activityservice/service/WeeklyPlanServiceTest.java): 5 unit tests verifying preview creation, single-active-plan enforcement, deep copy, and dynamic day status.
+      - [WeeklyPlanControllerTest.java](file:///d:/Fitness-AI-Web/activityservice/src/test/java/com/fitness/activityservice/controller/WeeklyPlanControllerTest.java): 5 WebMvc MockMvc tests verifying all endpoints.
+      - Total: **10/10 tests passed**.
 
 ## In Progress
 
-- **F02 — WeeklyPlan Domain**: Implementing domain models (`WeeklyPlan`, `WorkoutDay`, `WorkoutExercise`), MongoDB repository, service logic (Preview, Apply, Copy-as-New), and automated testing in `activityservice`.
+- **F03 — WorkoutJournal**: Implementing `WorkoutJournal` entity, repository, validation, post-workout submission endpoint (`POST /api/workout-journals`), and automated tests in `activityservice`.
 
 ## Next Up
 
