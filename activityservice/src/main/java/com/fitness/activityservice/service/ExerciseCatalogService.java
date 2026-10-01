@@ -45,6 +45,16 @@ public class ExerciseCatalogService {
     }
 
     /**
+     * Lấy toàn bộ danh sách mã bài tập chuẩn trong Catalog.
+     */
+    public List<String> getAllExerciseCodes() {
+        return exerciseRepository.findAll().stream()
+                .map(Exercise::getCode)
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    /**
      * Tìm clip video phù hợp nhất cho bài tập dựa trên trình độ và dụng cụ của người dùng.
      */
     public Optional<ExerciseVideo> findBestVideo(String exerciseCode, String userLevel, List<String> userEquipment) {

@@ -142,13 +142,38 @@
       - [WorkoutJournalServiceTest.java](file:///d:/Fitness-AI-Web/activityservice/src/test/java/com/fitness/activityservice/service/WorkoutJournalServiceTest.java): Updated to 8 tests including rejection of rest day journals.
       - Total `activityservice` test suite: **32/32 domain & controller tests PASSED**.
 
+  - **Feature Spec 06: F05 — AI Weekly Plan Generation ([context/spec_features/06-ai-weekly-plan-generation.md](file:///d:/Fitness-AI-Web/context/spec_features/06-ai-weekly-plan-generation.md))**:
+    - **F05.1 — Exercise & Video Catalog (`activityservice`)**:
+      - Models: `Exercise` (id, code, name, focus, difficulty, equipment) and `ExerciseVideo` (id, exerciseId, exerciseCode, title, youtubeUrl, youtubeVideoId, thumbnailUrl, duration, level, equipment).
+      - Repositories: `ExerciseRepository` and `ExerciseVideoRepository`.
+      - Service: `ExerciseCatalogService` with auto-seed logic for 10 foundational fitness exercises, exact code lookup, and best video matching based on user level and equipment.
+      - Automated Tests: [ExerciseCatalogServiceTest.java](file:///d:/Fitness-AI-Web/activityservice/src/test/java/com/fitness/activityservice/service/ExerciseCatalogServiceTest.java) (8/8 passed).
+    - **F05.2 — AiPlanValidator (`activityservice`)**:
+      - Strict zero-trust validation engine for AI generated plans.
+      - Core Rules: Reject unknown exercise code (no fallback), Reject wrong equipment, Reject difficulty hierarchy violation (BEGINNER only gets BEGINNER, etc.), Reject empty scheduled day, Reject missing phases (WARMUP, MAIN, COOLDOWN), Reject rest days containing exercises.
+      - Automated Tests: [AiPlanValidatorTest.java](file:///d:/Fitness-AI-Web/activityservice/src/test/java/com/fitness/activityservice/validator/AiPlanValidatorTest.java) (10/10 passed).
+    - **F05.3 — Gemini Integration (`activityservice`)**:
+      - **GeminiPromptBuilder**: Generates strictly formatted prompts requiring JSON ONLY, restricting AI to catalog whitelisted exercise codes, and translating `painReports` and `limitations` into motion exclusion constraints.
+      - **GeminiClient & GoogleGeminiClient**: Pure HTTP communication client with timeout and error handling, isolating LLM network calls from business logic. Validator remains the single source of truth.
+      - **VideoResolver**: Decoupled component resolving YouTube video clips from the Video Catalog based on user level and equipment.
+      - **AiPlanGenerationService**: Full orchestration pipeline: Profile + History ➔ PromptBuilder ➔ GeminiClient ➔ Parse JSON ➔ AiPlanValidator ➔ ExerciseCatalog (official Vietnamese names) ➔ VideoResolver ➔ `WeeklyPlanDto` (Preview mode, `isActive = false`).
+      - **AiPlanController**: REST API exposing `POST /api/activities/plans/generate` and `POST /api/ai/plans/generate`.
+    - **F05.4 — End-to-End Integration Test Suite**:
+      - Automated Tests:
+        - [GeminiPromptBuilderTest.java](file:///d:/Fitness-AI-Web/activityservice/src/test/java/com/fitness/activityservice/ai/GeminiPromptBuilderTest.java) (2/2 passed)
+        - [GoogleGeminiClientTest.java](file:///d:/Fitness-AI-Web/activityservice/src/test/java/com/fitness/activityservice/ai/GoogleGeminiClientTest.java) (2/2 passed)
+        - [AiPlanControllerTest.java](file:///d:/Fitness-AI-Web/activityservice/src/test/java/com/fitness/activityservice/controller/AiPlanControllerTest.java) (2/2 passed)
+        - [AiPlanGenerationServiceTest.java](file:///d:/Fitness-AI-Web/activityservice/src/test/java/com/fitness/activityservice/service/AiPlanGenerationServiceTest.java) (5/5 passed: full end-to-end mock flow, reject unknown codes without fallback, reject wrong equipment, reject difficulty hierarchy, reject malformed JSON).
+      - Total `activityservice` test suite: **62/62 tests PASSED 100%**.
+
 ## In Progress
 
-- **F05 — AIService Prompt & Gemini Integration**: Refactoring `aiservice` to use User Profile + `WeeklyHistorySummary` to generate `WeeklyPlan` with Gemini.
+- **F06 — Frontend AI Plan Preview & Execution**: Connecting frontend `/ai-plan` radar scan and generator button to `POST /api/activities/plans/generate`, displaying official catalog exercise names and video embeds, and triggering the Apply flow.
 
 ## Next Up
 
-- **F06 — YouTube Clip Resolver**: Fetching and attaching 3 real YouTube clips (Warmup, Main, Cooldown) per active day.
+- **F07 — Dynamic Mid-Week Adaptive Recalculation & Re-plan**
+- **F08 — Event-Driven Architecture (RabbitMQ Notifications & Tracking)**
 
 ## Architecture Decisions
 
