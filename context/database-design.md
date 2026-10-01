@@ -32,11 +32,11 @@ flowchart TD
     AIS -->|AiRecommendation| WJ
 ```
 
-| Service | Cơ sở dữ liệu | Vai trò chính |
-| :--- | :--- | :--- |
-| **`userservice`** | **PostgreSQL** (Relational) | Quản lý tài khoản, User Profile (thể chất, số đo, mục tiêu, kinh nghiệm, thể loại yêu thích, ràng buộc chấn thương, dụng cụ). |
-| **`activityservice`** | **MongoDB** (Document) | Quản lý Kế hoạch tuần (`WeeklyPlan`), Chi tiết buổi tập (`WorkoutDay`), Bài tập (`WorkoutExercise`), Nhật ký sau buổi tập (`WorkoutJournal`), và Lịch sử tập luyện. |
-| **`aiservice`** | **MongoDB** (Document) | Nhận `UserProfile` + `WeeklyHistorySummary` ➔ Gọi Gemini AI ➔ Trả về `WeeklyPlan`. Lưu Audit log tạo plan (`AiPlanGeneration`) và các lời khuyên phục hồi nhỏ (`AiRecommendation`). |
+| Service               | Cơ sở dữ liệu               | Vai trò chính                                                                                                                                                                       |
+| :----------------------| :----------------------------| :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **`userservice`**     | **PostgreSQL** (Relational) | Quản lý tài khoản, User Profile (thể chất, số đo, mục tiêu, kinh nghiệm, thể loại yêu thích, ràng buộc chấn thương, dụng cụ).                                                       |
+| **`activityservice`** | **MongoDB** (Document)      | Quản lý Kế hoạch tuần (`WeeklyPlan`), Chi tiết buổi tập (`WorkoutDay`), Bài tập (`WorkoutExercise`), Nhật ký sau buổi tập (`WorkoutJournal`), và Lịch sử tập luyện.                 |
+| **`aiservice`**       | **MongoDB** (Document)      | Nhận `UserProfile` + `WeeklyHistorySummary` ➔ Gọi Gemini AI ➔ Trả về `WeeklyPlan`. Lưu Audit log tạo plan (`AiPlanGeneration`) và các lời khuyên phục hồi nhỏ (`AiRecommendation`). |
 
 ---
 
@@ -63,7 +63,7 @@ flowchart LR
 
 #### 1. Bảng `users`
 * `id` (`VARCHAR(36)` / UUID, PK): Khóa chính nội bộ.
-* `keycloack_id` (`VARCHAR(255)`, Unique, Indexed): Định danh người dùng từ Keycloak IAM.
+* `keycloak_id` (`VARCHAR(255)`, Unique, Indexed): Định danh người dùng từ Keycloak IAM (OAuth2 `sub`).
 * `email` (`VARCHAR(255)`, Unique, Not Null): Địa chỉ email.
 * `firstname` (`VARCHAR(255)`): Tên.
 * `lastname` (`VARCHAR(255)`): Họ.
@@ -185,7 +185,9 @@ Lưu trữ nhật ký hoàn thành buổi tập khi người dùng submit qua mo
 ```
 
 * `plannedDurationMinutes` & `plannedIntensity`: Bổ sung để AI dễ dàng so sánh kế hoạch dự kiến vs thực tế người dùng đã thực hiện.
+* `caloriesBurned`: Là **chỉ số ước tính tương đối** dựa trên thời lượng và cường độ bài tập, **không xem là số đo y khoa hay dinh dưỡng chính xác** (phù hợp với định vị ứng dụng thuần workout).
 * `energy`: Thang 1–5 (1-Kiệt sức -> 5-Bùng nổ) — trực tiếp điều khiển độ đậm nhạt của ô ngày trên trang Tiến độ.
+* `photoUrl`: **Chỉ lưu đường dẫn URL / Object Storage reference** (AWS S3, MinIO, Cloudinary...), **tuyệt đối không lưu file ảnh nhị phân (Binary Blob / Base64) trực tiếp vào MongoDB** để đảm bảo hiệu năng và kiểm soát kích thước database.
 
 ---
 
@@ -217,7 +219,7 @@ Lưu trữ audit trail mỗi lần AI tạo kế hoạch tuần mới để ph�
     "Replaced jumping jacks with standing low-impact cardio",
     "Increased warm-up duration for knees by 2 mins"
   ],
-  "aiModel": "gemini-1.5-flash",
+  "aiModel": "String (Ghi nhận model thực tế cấu hình tại runtime, ví dụ: ${gemini.model:gemini-1.5-flash} - không hard-code chuỗi tĩnh)",
   "promptVersion": "v2.1-workout-only"
 }
 ```
@@ -294,6 +296,9 @@ Lưu trữ lời khuyên tức thời sau buổi tập hoặc phân tích phục
   }
 }
 ```
+
+> **Lưu ý quan trọng về `previousWeekSummary`**:
+> Đối với **tuần đầu tiên mới bắt đầu (sau Onboarding)** khi người dùng chưa có lịch sử tập luyện trước đó, trường `previousWeekSummary` **cho phép mang giá trị `null`**. Khi đó, AI Service sẽ tự động chuyển sang chế độ tạo lịch khởi động dựa thuần túy trên `userProfile` (mục tiêu, kinh nghiệm, ràng buộc chấn thương, dụng cụ và nguyện vọng riêng).
 
 ### DTO 3: `WorkoutJournalRequest` (Frontend ➔ ActivityService)
 ```json
