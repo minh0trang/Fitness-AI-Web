@@ -30,24 +30,24 @@ flowchart TD
 
     US -->|UserProfileDto| AIS
     AS -->|WeeklyHistorySummary| AIS
-    AIS -->|Prompt + Exercise Codes| Gemini[Google Gemini AI]
-    Gemini -->|Workout Plan: Codes, Sets, Reps| AS
-    AS -->|Validator -> Exercise & Video Catalog| WP
+    AIS -->|Prompt + Context| Gemini[Google Gemini AI]
+    Gemini -->|Exercise Codes, Sets, Reps| AS
+    AS -->|Exercise Catalog -> Validator -> Video Catalog| WP
     WJ -->|WorkoutCompletedEvent| AIS
     AIS -->|AiRecommendation| WJ
 ```
 
 | Service               | Cơ sở dữ liệu               | Vai trò chính                                                                                                                                                                       |
 | :----------------------| :----------------------------| :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **`userservice`**     | **PostgreSQL** (Relational) | Quản lý tài khoản, User Profile (thể chất, số đo, mục tiêu, kinh nghiệm, thể loại yêu thích, ràng buộc chấn thương, dụng cụ).                                                       |
+| **`userservice`**     | **PostgreSQL** (Relational) | Quản lý tài khoản, User Profile (thể chất, số đo, mục tiêu, kinh nghiệm, thể loại yêu thích, ràng buộc thể chất/hạn chế vận động, dụng cụ).                                        |
 | **`activityservice`** | **MongoDB** (Document)      | Quản lý Kế hoạch tuần (`WeeklyPlan`), Chi tiết buổi tập (`WorkoutDay`), Nhật ký sau tập (`WorkoutJournal`), và **Kho bài tập & video** (`Exercise`, `ExerciseVideo`). Không cần Video Service riêng. |
-| **`aiservice`**       | **MongoDB** (Document)      | Nhận `UserProfile` + `WeeklyHistorySummary` ➔ Gọi Gemini AI sinh Workout Plan (chỉ trả exercise codes, không chọn video) ➔ Chuyển giao sang `activityservice` để validate và map video. Lưu Audit log (`AiPlanGeneration`). |
+| **`aiservice`**       | **MongoDB** (Document)      | Nhận `UserProfile` + `WeeklyHistorySummary` ➔ Gọi Gemini AI sinh Workout Plan (chỉ trả exercise codes, không chọn video) ➔ Chuyển giao sang `activityservice` để tra cứu catalog, validate và map video. Lưu Audit log (`AiPlanGeneration`). |
 
 ---
 
 ## 2. Chu Trình Thích Ứng Cốt Lõi (Core Adaptive Loop)
 
-Hệ thống không gửi nguyên toàn bộ lịch sử thô (raw logs) sang Gemini AI để tránh quá tải token và loãng context, mà thông qua **`WeeklyHistorySummary`**. Đặc biệt, **Gemini không trực tiếp chọn video** mà chỉ quyết định mã bài tập (`exerciseCode`) cùng khối lượng tập; Backend tự động tra cứu video trong kho:
+Hệ thống không gửi nguyên toàn bộ lịch sử thô (raw logs) sang Gemini AI để tránh quá tải token và loãng context, mà thông qua **`WeeklyHistorySummary`**. Đặc biệt, **Gemini không trực tiếp chọn video** mà chỉ quyết định mã bài tập (`exerciseCode`) cùng khối lượng tập; Backend tự động tra cứu Exercise Catalog, chạy Validator rồi ghép video từ Video Catalog:
 
 ```mermaid
 flowchart TD
@@ -55,11 +55,11 @@ flowchart TD
     B[7 ngày tập trước\nWorkoutJournals] --> C
     C -->|WeeklyHistorySummary| D[AIService\n+ Gemini Prompt]
     D -->|Gọi LLM| GMN[Google Gemini AI]
-    GMN -->|Workout Plan:\nExercise Codes, Sets, Reps| VAL[Validator Engine\n- Exercise tồn tại?\n- Khớp Equipment/Level?\n- Khớp Scheduled/Rest day?]
-    VAL -->|Tra cứu mã bài tập| EC[Exercise Catalog\nactivityservice.exercises]
-    EC -->|Ghép video phù hợp| VC[Video Catalog\nactivityservice.exercise_videos]
+    GMN -->|Workout Plan:\nExercise Codes, Sets, Reps| EC[Exercise Catalog\nactivityservice.exercises]
+    EC -->|Thực thể bài tập| VAL[Validator Engine\n- Exercise tồn tại trong Catalog?\n- Khớp Equipment & Level?\n- Khớp Scheduled/Rest day?]
+    VAL -->|Danh sách hợp lệ| VC[Video Catalog\nactivityservice.exercise_videos]
     VC -->|WeeklyPlan Preview hoàn chỉnh| E[ActivityService\nlưu WeeklyPlan Preview]
-    E -->|User bấm Áp Dụng| F[Người dùng thực hiện\nbuổi tập Workout]
+    E -->|User bấm Áp Dụng| F[WeeklyPlan ACTIVE\nNgười dùng thực hiện Workout]
     F --> G[Ghi nhận\nWorkoutJournal]
     G -->|Tích lũy 7 ngày| B
 ```

@@ -6,30 +6,33 @@ Xây dựng chu trình sinh Kế hoạch tập tuần mới (**`WeeklyPlan`**) t
 
 ---
 
-## 2. Kiến Trúc Luồng Thực Thi Mới (Revised Flow)
+## 2. Kiến Trúc Luồng Thực Thi Chuẩn Hóa (Standardized Flow)
 
 ```text
-User Profile + History (WeeklyHistorySummary)
-        │
-        ▼
-   [aiservice]
-  Google Gemini
-        │
-        ▼
-   Workout Plan (Mã bài tập: code, sets, reps, duration, phase)
-        │
-        ▼
- [activityservice]
-  Validator Engine
-        │ (Kiểm tra tồn tại, equipment, difficulty, rest/scheduled days)
-        ▼
-  Exercise Catalog (activityservice.exercises)
-        │ (Tra cứu tên tiếng Việt, nhóm cơ, thông số chuẩn)
-        ▼
-   Video Catalog (activityservice.exercise_videos)
-        │ (Tìm clip YouTube tương ứng phù hợp trình độ & dụng cụ)
-        ▼
-WeeklyPlan Preview (Xem trước trên /ai-plan trước khi user bấm Áp Dụng)
+         Profile + History (WeeklyHistorySummary)
+                        │
+                        ▼
+                     [aiservice]
+                  Google Gemini AI
+                        │
+                        ▼
+                 Exercise Codes (Mã bài tập, sets, reps, duration, phase)
+                        │
+                        ▼
+               [activityservice]
+               Exercise Catalog (activityservice.exercises)
+                        │ (Tra cứu thông tin bài tập theo code)
+                        ▼
+                Validator Engine
+                        │ (Kiểm tra tồn tại, equipment, difficulty hierarchy, rest/scheduled days)
+                        ▼
+                 Video Catalog (activityservice.exercise_videos)
+                        │ (Ghép video clip YouTube tương ứng)
+                        ▼
+               WeeklyPlan Preview (Xem trước trên /ai-plan)
+                        │
+                        ▼
+                      Apply (User kích hoạt thành ACTIVE)
 ```
 
 ---
@@ -39,7 +42,7 @@ WeeklyPlan Preview (Xem trước trên /ai-plan trước khi user bấm Áp Dụ
 Cả hai model được đặt trực tiếp trong `activityservice` để truy vấn nội bộ tốc độ cao, không cần thêm microservice quản lý video riêng.
 
 ### 3.1. Entity `Exercise` (Collection: `exercises`)
-Lưu danh mục các bài tập chuẩn hóa làm từ điển đối chiếu cho Gemini AI:
+Lưu danh mục các bài tập chuẩn hóa làm từ điển đối chiếu:
 
 ```json
 {
@@ -65,8 +68,10 @@ Lưu kho clip video bài tập tương ứng:
 {
   "_id": "ObjectId",
   "exerciseId": "String (ObjectId liên kết exercises._id)",
+  "exerciseCode": "String (PUSH_UP)",
   "title": "Hướng dẫn hít đất chuẩn form cho người mới",
   "youtubeUrl": "https://www.youtube.com/watch?v=IODxDxX7oi4",
+  "youtubeVideoId": "IODxDxX7oi4",
   "thumbnailUrl": "https://img.youtube.com/vi/IODxDxX7oi4/hqdefault.jpg",
   "duration": 300,
   "level": "BEGINNER",
@@ -75,8 +80,9 @@ Lưu kho clip video bài tập tương ứng:
 ```
 * `id` (`String` / ObjectId): Khóa chính.
 * `exerciseId` (`String`): Khóa ngoại liên kết tới `exercises`.
+* `exerciseCode` (`String`): Mã bài tập đối ứng.
 * `title` (`String`): Tiêu đề video.
-* `youtubeUrl` (`String`): Link video YouTube phát bài tập.
+* `youtubeUrl` & `youtubeVideoId`: Đường dẫn video YouTube thực tế và ID phát video nhúng.
 * `thumbnailUrl` (`String`): Ảnh đại diện thumbnail.
 * `duration` (`Integer`): Thời lượng video (giây).
 * `level` (`String`): Phù hợp trình độ (`BEGINNER`, `INTERMEDIATE`, `ADVANCED`).
@@ -90,31 +96,54 @@ Lưu kho clip video bài tập tương ứng:
    - Gemini chỉ trả về mã chuẩn: `WARMUP_ARM_CIRCLES`, `PUSH_UP`, `SQUAT`, `PLANK`, `COOLDOWN_HAMSTRING_STRETCH`... cùng số sets, reps, thời lượng.
    - Gemini **không bao giờ trả URL video YouTube** (loại bỏ hoàn toàn rủi ro AI sinh link ảo 404, link video bị xóa hoặc không đúng bài tập).
 2. **Backend tự tìm video trong kho**:
-   - Dựa trên `exercise.code` ➔ Lấy `exerciseId`.
+   - Backend lấy mã `code` tra cứu trong `Exercise Catalog` ➔ Lấy `exerciseId`.
    - Tìm kiếm trong `ExerciseVideo` các clip có `exerciseId` khớp, ưu tiên video có `level` và `equipment` tương thích với `UserProfile` của người dùng.
 
 ---
 
 ## 5. Quy Tắc Kiểm Tra Của Validator (Validator Rules)
 
-Sau khi nhận output từ Gemini và trước khi tạo `WeeklyPlan`, `AiPlanValidator` kiểm tra nghiêm ngặt 5 tiêu chí:
+Sau khi Gemini trả về mã bài tập và hệ thống tra cứu qua **Exercise Catalog**, `AiPlanValidator` kiểm tra nghiêm ngặt 5 tiêu chí:
 
-1. **Exercise có tồn tại không?**:
-   - Mọi mã `code` do Gemini sinh ra bắt buộc phải tồn tại trong collection `exercises`.
-   - Nếu mã lạ không tồn tại ➔ Validator từ chối hoặc fallback sang bài tập cơ bản cùng nhóm cơ.
-2. **Equipment có phù hợp không?**:
-   - Dụng cụ yêu cầu của bài tập (`exercise.equipment`) phải là tập con của dụng cụ người dùng có (`userProfile.equipment`).
-   - Tuyệt đối không giao bài tập tạ (`DUMBBELL`) nếu user chỉ chọn `BODYWEIGHT`.
-3. **Difficulty có phù hợp không?**:
-   - Độ khó của bài tập không được vượt quá trình độ người dùng (ví dụ: User `BEGINNER` không được giao bài độ khó `ADVANCED`).
-4. **Scheduled Day có bài tập không?**:
-   - Các ngày thuộc `userProfile.selectedDays` bắt buộc có `isRestDay = false` và phải có đủ 3 pha: `WARMUP`, `MAIN`, `COOLDOWN`.
-5. **Rest Day không có bài tập không?**:
-   - Các ngày KHÔNG thuộc `selectedDays` bắt buộc có `isRestDay = true` và danh sách bài tập rỗng (`exercises = []`).
+### 5.1. Exercise có tồn tại trong Catalog không?
+* Mọi mã `code` do Gemini sinh ra bắt buộc phải tìm thấy thực thể tương ứng trong collection `exercises`.
+* Nếu mã lạ không tồn tại ➔ Validator từ chối plan hoặc fallback bài tập cùng nhóm cơ.
+
+### 5.2. Equipment có phù hợp không?
+* Mọi dụng cụ yêu cầu của bài tập (`exercise.equipment`) phải nằm trong tập dụng cụ người dùng sở hữu (`userProfile.equipment`).
+* Ví dụ: Nếu user chỉ chọn `BODYWEIGHT`, bài tập yêu cầu `DUMBBELL` hoặc `KETTLEBELL` sẽ bị Validator từ chối.
+
+### 5.3. Định nghĩa cấp bậc Difficulty Hierarchy (Không để Validator tự đoán)
+Validator áp dụng quy tắc phân cấp rõ ràng theo kinh nghiệm tập luyện của người dùng:
+
+| Trình độ User (`userProfile.experience`) | Tập độ khó bài tập được phép (`exercise.difficulty`) |
+| :--- | :--- |
+| **`BEGINNER`** | Chỉ chấp nhận bài tập **`BEGINNER`**. |
+| **`INTERMEDIATE`** | Chấp nhận bài tập **`BEGINNER`** và **`INTERMEDIATE`**. |
+| **`ADVANCED`** | Chấp nhận toàn bộ: **`BEGINNER`**, **`INTERMEDIATE`**, và **`ADVANCED`**. |
+
+*Nếu bài tập vượt quá cấp bậc cho phép của user ➔ Validator đánh dấu vi phạm.*
+
+### 5.4. Scheduled Day có bài tập không?
+* Các ngày thuộc `userProfile.selectedDays` bắt buộc có `isRestDay = false` và phải có đủ 3 pha: `WARMUP`, `MAIN`, `COOLDOWN`.
+
+### 5.5. Rest Day không có bài tập không?
+* Các ngày KHÔNG thuộc `selectedDays` bắt buộc có `isRestDay = true` và danh sách bài tập rỗng (`exercises = []`).
 
 ---
 
-## 6. Cấu Trúc Request & Response
+## 6. Phản Hồi Thể Chất: Sử Dụng Thuật Ngữ `painReports` (Tránh Kết Luận Y Khoa)
+
+Hệ thống **không đưa ra kết luận hoặc chẩn đoán y khoa**. Hệ thống chỉ tiếp nhận và thích ứng theo phản hồi thể chất chủ quan của người dùng:
+* Thay vì gọi "chấn thương", hệ thống định danh là **`painReports` / tín hiệu mệt mỏi**.
+* **Tuần đầu tiên (First Plan)**: `previousWeekSummary = null` ➔ Gemini sinh giáo án khởi động dựa trên `UserProfile` (mục tiêu, sở thích, hạn chế vận động).
+* **Tuần thích ứng (Adaptive Plan)**: Nhận `previousWeekSummary` chứa `painReports` (ví dụ `["KNEE_PAIN"]`) và tín hiệu mệt mỏi (`averageDifficulty` cao, `averageEnergy` thấp):
+  - Gemini tự động né các động tác tác động vào khu vực người dùng báo đau (ví dụ gối đau ➔ thay thế bài nhảy/squat sâu bằng bài tĩnh trên thảm).
+  - Tự động điều chỉnh cường độ (deload) nếu ghi nhận mệt mỏi kéo dài.
+
+---
+
+## 7. Cấu Trúc Request & Response
 
 ### Endpoint
 `POST /api/ai/plans/generate` (Header: `X-User-ID: {keycloakId}`)
@@ -163,8 +192,8 @@ Sau khi nhận output từ Gemini và trước khi tạo `WeeklyPlan`, `AiPlanVa
   "level": "BEGINNER",
   "durationPerSession": "30-45",
   "frequencyPerWeek": 5,
-  "weeklyOverview": "Tuần thích ứng: 5 buổi · Tập trung Core & Thân trên · Tránh áp lực khớp gối",
-  "coachTip": "Tuần trước bạn có mỏi gối, giáo án tuần này đã thay thế toàn bộ bài nhảy bằng bài tập tĩnh trên thảm.",
+  "weeklyOverview": "Tuần thích ứng: 5 buổi · Tập trung Core & Thân trên · Tránh áp lực khu vực báo đau gối",
+  "coachTip": "Tuần trước bạn có báo mỏi gối (painReports), giáo án tuần này đã thay thế toàn bộ bài nhảy bằng bài tập tĩnh trên thảm.",
   "startDate": "2026-10-05",
   "endDate": "2026-10-11",
   "isActive": false,
@@ -217,18 +246,19 @@ Sau khi nhận output từ Gemini và trước khi tạo `WeeklyPlan`, `AiPlanVa
 
 ---
 
-## 7. Kế Hoạch Kiểm Thử Tự Động (Automated Testing)
+## 8. Kế Hoạch Kiểm Thử Tự Động (Automated Testing)
 
 1. **`ExerciseCatalogTest`**:
    - Seed và tìm kiếm bài tập theo `code`.
    - Tìm kiếm video theo `exerciseId`, `level`, và `equipment`.
 2. **`AiPlanValidatorTest`**:
-   - Test 1: Hợp lệ 100% khi bài tập có trong catalog, khớp equipment, đúng scheduled/rest days.
-   - Test 2: Từ chối bài tập có `code` không tồn tại trong Exercise Catalog.
+   - Test 1: Hợp lệ 100% khi bài tập có trong catalog, khớp equipment, đúng Difficulty Hierarchy, đúng scheduled/rest days.
+   - Test 2: Từ chối khi bài tập có `code` không tồn tại trong Exercise Catalog.
    - Test 3: Từ chối khi bài tập đòi hỏi `DUMBBELL` trong khi user chỉ có `BODYWEIGHT`.
-   - Test 4: Từ chối khi Rest Day có bài tập hoặc Scheduled Day bị rỗng.
+   - Test 4: Từ chối khi user `BEGINNER` bị giao bài `ADVANCED`.
+   - Test 5: Từ chối khi Rest Day có bài tập hoặc Scheduled Day bị rỗng.
 3. **`GeminiPromptBuilderTest`**:
    - Case tuần đầu tiên (`previousWeekSummary = null`).
-   - Case tuần thích ứng (`previousWeekSummary` chứa `painReports` và `difficulty` cao).
+   - Case tuần thích ứng (`previousWeekSummary` chứa `painReports` và tín hiệu mệt mỏi).
 4. **`AiPlanGenerationIntegrationTest`**:
-   - Kiểm tra toàn bộ luồng từ Input ➔ Gemini Raw ➔ Validator ➔ Catalog Mapping ➔ `WeeklyPlanDto`.
+   - Kiểm tra toàn bộ luồng từ Input ➔ Gemini Raw ➔ Exercise Catalog ➔ Validator ➔ Video Catalog ➔ `WeeklyPlanDto`.
