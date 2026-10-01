@@ -17,6 +17,9 @@ flowchart TD
     subgraph AS [Activity Service - MongoDB]
         WP[(weekly_plans)]
         WJ[(workout_journals)]
+        EX[(exercises)]
+        EV[(exercise_videos)]
+        EX --- EV
         WP -.->|planId & date| WJ
     end
 
@@ -25,9 +28,11 @@ flowchart TD
         AR[(recommendations)]
     end
 
-    US -->|UserProfileDto| AS
+    US -->|UserProfileDto| AIS
     AS -->|WeeklyHistorySummary| AIS
-    AIS -->|WeeklyPlanDto| AS
+    AIS -->|Prompt + Exercise Codes| Gemini[Google Gemini AI]
+    Gemini -->|Workout Plan: Codes, Sets, Reps| AS
+    AS -->|Validator -> Exercise & Video Catalog| WP
     WJ -->|WorkoutCompletedEvent| AIS
     AIS -->|AiRecommendation| WJ
 ```
@@ -35,22 +40,26 @@ flowchart TD
 | Service               | Cơ sở dữ liệu               | Vai trò chính                                                                                                                                                                       |
 | :----------------------| :----------------------------| :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **`userservice`**     | **PostgreSQL** (Relational) | Quản lý tài khoản, User Profile (thể chất, số đo, mục tiêu, kinh nghiệm, thể loại yêu thích, ràng buộc chấn thương, dụng cụ).                                                       |
-| **`activityservice`** | **MongoDB** (Document)      | Quản lý Kế hoạch tuần (`WeeklyPlan`), Chi tiết buổi tập (`WorkoutDay`), Bài tập (`WorkoutExercise`), Nhật ký sau buổi tập (`WorkoutJournal`), và Lịch sử tập luyện.                 |
-| **`aiservice`**       | **MongoDB** (Document)      | Nhận `UserProfile` + `WeeklyHistorySummary` ➔ Gọi Gemini AI ➔ Trả về `WeeklyPlan`. Lưu Audit log tạo plan (`AiPlanGeneration`) và các lời khuyên phục hồi nhỏ (`AiRecommendation`). |
+| **`activityservice`** | **MongoDB** (Document)      | Quản lý Kế hoạch tuần (`WeeklyPlan`), Chi tiết buổi tập (`WorkoutDay`), Nhật ký sau tập (`WorkoutJournal`), và **Kho bài tập & video** (`Exercise`, `ExerciseVideo`). Không cần Video Service riêng. |
+| **`aiservice`**       | **MongoDB** (Document)      | Nhận `UserProfile` + `WeeklyHistorySummary` ➔ Gọi Gemini AI sinh Workout Plan (chỉ trả exercise codes, không chọn video) ➔ Chuyển giao sang `activityservice` để validate và map video. Lưu Audit log (`AiPlanGeneration`). |
 
 ---
 
 ## 2. Chu Trình Thích Ứng Cốt Lõi (Core Adaptive Loop)
 
-Hệ thống không gửi nguyên toàn bộ lịch sử thô (raw logs) sang Gemini AI để tránh quá tải token và loãng context, mà thông qua **`WeeklyHistorySummary`**:
+Hệ thống không gửi nguyên toàn bộ lịch sử thô (raw logs) sang Gemini AI để tránh quá tải token và loãng context, mà thông qua **`WeeklyHistorySummary`**. Đặc biệt, **Gemini không trực tiếp chọn video** mà chỉ quyết định mã bài tập (`exerciseCode`) cùng khối lượng tập; Backend tự động tra cứu video trong kho:
 
 ```mermaid
-flowchart LR
+flowchart TD
     A[User Profile] --> C[ActivityService\ntổng hợp Summary]
     B[7 ngày tập trước\nWorkoutJournals] --> C
     C -->|WeeklyHistorySummary| D[AIService\n+ Gemini Prompt]
-    D -->|WeeklyPlan mới| E[ActivityService\nlưu WeeklyPlan]
-    E --> F[Người dùng thực hiện\nbuổi tập Workout]
+    D -->|Gọi LLM| GMN[Google Gemini AI]
+    GMN -->|Workout Plan:\nExercise Codes, Sets, Reps| VAL[Validator Engine\n- Exercise tồn tại?\n- Khớp Equipment/Level?\n- Khớp Scheduled/Rest day?]
+    VAL -->|Tra cứu mã bài tập| EC[Exercise Catalog\nactivityservice.exercises]
+    EC -->|Ghép video phù hợp| VC[Video Catalog\nactivityservice.exercise_videos]
+    VC -->|WeeklyPlan Preview hoàn chỉnh| E[ActivityService\nlưu WeeklyPlan Preview]
+    E -->|User bấm Áp Dụng| F[Người dùng thực hiện\nbuổi tập Workout]
     F --> G[Ghi nhận\nWorkoutJournal]
     G -->|Tích lũy 7 ngày| B
 ```
@@ -188,6 +197,47 @@ Lưu trữ nhật ký hoàn thành buổi tập khi người dùng submit qua mo
 * `caloriesBurned`: Là **chỉ số ước tính tương đối** dựa trên thời lượng và cường độ bài tập, **không xem là số đo y khoa hay dinh dưỡng chính xác** (phù hợp với định vị ứng dụng thuần workout).
 * `energy`: Thang 1–5 (1-Kiệt sức -> 5-Bùng nổ) — trực tiếp điều khiển độ đậm nhạt của ô ngày trên trang Tiến độ.
 * `photoUrl`: **Chỉ lưu đường dẫn URL / Object Storage reference** (AWS S3, MinIO, Cloudinary...), **tuyệt đối không lưu file ảnh nhị phân (Binary Blob / Base64) trực tiếp vào MongoDB** để đảm bảo hiệu năng và kiểm soát kích thước database.
+
+#### 3. Collection `exercises` (Exercise Catalog)
+Kho danh mục bài tập chuẩn hóa, làm cầu nối giữa mã bài tập do Gemini sinh ra và video thực tế:
+
+```json
+{
+  "_id": "ObjectId",
+  "code": "PUSH_UP",
+  "name": "Hít đất cơ bản",
+  "focus": "Chest",
+  "difficulty": "BEGINNER",
+  "equipment": ["BODYWEIGHT"]
+}
+```
+* `code` (`String`, Unique Indexed): Mã bài tập chuẩn (uppercase snake_case như `PUSH_UP`, `SQUAT`, `GLUTE_BRIDGE`, `PLANK`...).
+* `name` (`String`): Tên tiếng Việt hiển thị cho người dùng.
+* `focus` (`String`): Nhóm cơ tác động chính (`Chest`, `Back`, `Legs`, `Core`, `Shoulders`, `Full Body`, `Warmup`, `Cooldown`).
+* `difficulty` (`String`): Mức độ (`BEGINNER`, `INTERMEDIATE`, `ADVANCED`).
+* `equipment` (`List<String>`): Dụng cụ tối thiểu cần thiết (`BODYWEIGHT`, `DUMBBELL`, `YOGA_MAT`, `RESISTANCE_BAND`...).
+
+#### 4. Collection `exercise_videos` (Video Catalog)
+Kho video clip hướng dẫn tập luyện tương ứng với từng bài tập trong catalog (không cần service riêng):
+
+```json
+{
+  "_id": "ObjectId",
+  "exerciseId": "String (ObjectId liên kết exercises._id)",
+  "exerciseCode": "String (PUSH_UP)",
+  "title": "Hướng dẫn hít đất chuẩn form cho người mới",
+  "youtubeUrl": "https://www.youtube.com/watch?v=IODxDxX7oi4",
+  "youtubeVideoId": "IODxDxX7oi4",
+  "thumbnailUrl": "https://img.youtube.com/vi/IODxDxX7oi4/hqdefault.jpg",
+  "duration": 300,
+  "level": "BEGINNER",
+  "equipment": ["BODYWEIGHT"]
+}
+```
+* `exerciseId` & `exerciseCode`: Khóa liên kết bài tập.
+* `youtubeUrl` & `youtubeVideoId`: Đường dẫn video YouTube thực tế và ID phát video nhúng.
+* `duration`: Thời lượng video (giây).
+* `level` & `equipment`: Dùng để thuật toán tự động chọn clip phù hợp nhất với trình độ và dụng cụ của người dùng.
 
 ---
 
