@@ -31,7 +31,12 @@ public class UserProfileDto {
     private Double hips;
 
     private String activityLevel; // SEDENTARY, LIGHT, MODERATE, ACTIVE, VERY_ACTIVE
-    private String fitnessGoal;   // WEIGHT_LOSS, MUSCLE_GAIN, ENDURANCE, FLEXIBILITY, GENERAL_FITNESS
+    private String fitnessGoal;   // WEIGHT_LOSS, FAT_LOSS, MUSCLE_GAIN, STRENGTH, ENDURANCE, FLEXIBILITY, GENERAL_FITNESS
+    private String experience;    // BEGINNER, INTERMEDIATE, ADVANCED
+
+    @Builder.Default
+    private Set<String> workoutPreferences = new HashSet<>(); // STRENGTH, CARDIO, YOGA, PILATES, MOBILITY, HIIT
+
     private String customWishes;
     private String workoutDuration; // e.g. "30-45"
 

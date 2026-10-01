@@ -114,6 +114,18 @@ public class UserService {
         if (dto.getFitnessGoal() != null) {
             profile.setFitnessGoal(parseEnum(FitnessGoal.class, dto.getFitnessGoal()));
         }
+        if (dto.getExperience() != null) {
+            profile.setExperience(parseEnum(ExperienceLevel.class, dto.getExperience()));
+        }
+
+        // Workout preferences
+        if (dto.getWorkoutPreferences() != null) {
+            Set<WorkoutPreference> parsedPrefs = dto.getWorkoutPreferences().stream()
+                    .map(s -> parseEnum(WorkoutPreference.class, s))
+                    .filter(java.util.Objects::nonNull)
+                    .collect(Collectors.toSet());
+            profile.setWorkoutPreferences(parsedPrefs);
+        }
 
         // Numeric metrics
         if (dto.getAge() != null) profile.setAge(dto.getAge());
@@ -178,6 +190,10 @@ public class UserService {
                 .hips(profile.getHips())
                 .activityLevel(profile.getActivityLevel() != null ? profile.getActivityLevel().name() : null)
                 .fitnessGoal(profile.getFitnessGoal() != null ? profile.getFitnessGoal().name() : null)
+                .experience(profile.getExperience() != null ? profile.getExperience().name() : null)
+                .workoutPreferences(profile.getWorkoutPreferences() != null
+                        ? profile.getWorkoutPreferences().stream().map(Enum::name).collect(Collectors.toSet())
+                        : new HashSet<>())
                 .customWishes(profile.getCustomWishes())
                 .workoutDuration(profile.getWorkoutDuration())
                 .selectedDays(profile.getSelectedDays())

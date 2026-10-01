@@ -52,6 +52,16 @@ public class UserProfile {
     @Enumerated(EnumType.STRING)
     private FitnessGoal fitnessGoal;
 
+    @Enumerated(EnumType.STRING)
+    private ExperienceLevel experience;
+
+    @ElementCollection(targetClass = WorkoutPreference.class, fetch = FetchType.EAGER)
+    @Enumerated(EnumType.STRING)
+    @CollectionTable(name = "user_workout_preferences", joinColumns = @JoinColumn(name = "profile_id"))
+    @Column(name = "preference")
+    @Builder.Default
+    private Set<WorkoutPreference> workoutPreferences = new HashSet<>();
+
     @Column(length = 1000)
     private String customWishes;
 

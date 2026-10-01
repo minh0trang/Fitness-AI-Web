@@ -43,11 +43,16 @@
   - Enabled realm-level user registration (`registrationAllowed=true`) in `zero-fitness`.
   - Added dedicated "Tạo Tài Khoản Mới (Đăng Ký)" button in `LoginPage.jsx` ([LoginPage.jsx](file:///d:/Fitness-AI-Web/fitness-app-frontend/src/pages/LoginPage.jsx)).
 - **Feature 02: User Profile Sync & Mandatory Onboarding**:
-  - Defined strict Java Enums: `Gender`, `ActivityLevel`, `FitnessGoal`, `PhysicalLimitation`, `EquipmentType`.
-  - Built `UserProfile` JPA Entity in `userservice` with one-to-one mapping and collection tables.
+  - Defined strict Java Enums: `Gender`, `ActivityLevel`, `FitnessGoal` (with `FAT_LOSS` & `STRENGTH`), `ExperienceLevel`, `WorkoutPreference`, `PhysicalLimitation`, `EquipmentType`.
+  - Built `UserProfile` JPA Entity in `userservice` with one-to-one mapping, collection tables (`user_selected_days`, `user_limitations`, `user_equipment`, `user_workout_preferences`), and training experience.
   - Implemented `POST /api/users/sync`, `GET /api/users/{keycloakId}/profile`, and `PUT /api/users/{keycloakId}/profile`.
   - Created `userService.js` for API integration via API Gateway.
   - Built Onboarding Guard in `App.jsx`, `Sidebar.jsx`, and `ProfilePage.jsx` locking app access until initial profile is completed.
+  - Synchronized all newly refined fields from `ProfilePage.jsx`: `experience` (BEGINNER/INTERMEDIATE/ADVANCED), `workoutPreferences` (STRENGTH, CARDIO, YOGA, PILATES, MOBILITY, HIIT), and `FitnessGoal` mapping.
+  - **Automated Testing Suite (100% Passed)**:
+    - [UserServiceTest.java](file:///d:/Fitness-AI-Web/userservice/src/test/java/com/fitness/userservice/service/UserServiceTest.java): 5 unit tests covering new user creation, profile update with experience & preferences, biometrics calculation, and error handling.
+    - [UserControllerTest.java](file:///d:/Fitness-AI-Web/userservice/src/test/java/com/fitness/userservice/controller/UserControllerTest.java): 3 WebMvc tests with MockMvc verifying `/sync`, `GET /profile`, and `PUT /profile` HTTP responses and JSON payloads.
+    - Total: **8/8 tests passed** with JUnit 5 & Surefire.
 - **UI Flow Alignment & Workout-Centric Architecture (Latest)**:
   - **Non-Nutrition Pivot & Header Specs (`AiPlanPage.jsx`)**:
     - Removed nutrition/metabolic calorie chips (`BMR / TDEE / Khuyến nghị calo`) from the AI Plan Header as the platform focuses purely on workout execution, physical conditioning, and movement rather than nutrition.
