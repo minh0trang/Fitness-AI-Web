@@ -122,14 +122,23 @@
       - [WeeklyPlanControllerTest.java](file:///d:/Fitness-AI-Web/activityservice/src/test/java/com/fitness/activityservice/controller/WeeklyPlanControllerTest.java): 5 WebMvc MockMvc tests verifying all endpoints.
       - Total: **10/10 tests passed**.
 
+  - **Feature Spec 04: F03 — WorkoutJournal ([context/spec_features/04-workout-journal.md](file:///d:/Fitness-AI-Web/context/spec_features/04-workout-journal.md))**:
+    - Finalized 4 core architectural requirements: `userId` = Keycloak ID, Idempotency key = `userId + planId + dayIndex`, MongoDB compound unique index, strictly extract user from `X-User-ID` header (no `/user/{userId}` endpoints), and isolation from RabbitMQ/events (events deferred to F08).
+    - Built MongoDB Document `WorkoutJournal`, `WorkoutJournalRepository`, `WorkoutJournalService`, and `WorkoutJournalController`.
+    - Handled validation for RPE difficulty (1-5), energy (1-5), positive durations, and non-empty pain locations if `hasPain=true`.
+    - **Automated Testing Suite (100% Passed)**:
+      - [WorkoutJournalServiceTest.java](file:///d:/Fitness-AI-Web/activityservice/src/test/java/com/fitness/activityservice/service/WorkoutJournalServiceTest.java): 7 unit tests verifying idempotency upsert, plan validation, RPE/energy bounds, pain location validation, and retrieval by user/plan.
+      - [WorkoutJournalControllerTest.java](file:///d:/Fitness-AI-Web/activityservice/src/test/java/com/fitness/activityservice/controller/WorkoutJournalControllerTest.java): 4 WebMvc MockMvc tests verifying `POST`, `GET /{journalId}`, `GET /plan/{planId}`, and `GET` (user journals) with `X-User-ID` security.
+      - Total `activityservice` tests: **21/21 passed**.
+
 ## In Progress
 
-- **F03 — WorkoutJournal**: Implementing `WorkoutJournal` entity, repository, validation, post-workout submission endpoint (`POST /api/workout-journals`), and automated tests in `activityservice`.
+- **F04 — WeeklyHistorySummary**: Aggregating 7 days of `WorkoutJournal` entries into a compact AI context summary (`WeeklyHistorySummaryDto`) in `activityservice`.
 
 ## Next Up
 
-- Connect `ProfilePage` check-in submission to backend user/activity service.
-- Integrate real YouTube Data API v3 search alongside Gemini plan generation.
+- **F05 — AIService Prompt & Gemini Integration**: Refactoring `aiservice` to use User Profile + `WeeklyHistorySummary` to generate `WeeklyPlan` with Gemini.
+- **F06 — YouTube Clip Resolver**: Fetching and attaching 3 real YouTube clips (Warmup, Main, Cooldown) per active day.
 
 ## Architecture Decisions
 
