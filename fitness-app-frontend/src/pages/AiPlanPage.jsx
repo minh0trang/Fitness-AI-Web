@@ -33,14 +33,14 @@ export default function AiPlanPage({
     if (aiPlan && aiPlan.length > 0) return aiPlan;
     const allTags = [
       ...(scheduleConfig?.limitations || ["knee_pain", "no_jumping"]),
-      ...(scheduleConfig?.equipment || ["bodyweight", "yoga_mat"]),
+      ...(scheduleConfig?.equipment || ["bodyweight"]),
     ];
     return generateAiWeeklyPlan({
       selectedDays: scheduleConfig?.selectedDays || [1, 2, 4, 5, 7],
       duration: scheduleConfig?.duration || "30-45",
       tags: allTags,
       limitations: scheduleConfig?.limitations || ["knee_pain", "no_jumping"],
-      equipment: scheduleConfig?.equipment || ["bodyweight", "yoga_mat"],
+      equipment: scheduleConfig?.equipment || ["bodyweight"],
       fitnessGoal: profile?.fitnessGoal || "Tập trung giảm 3cm vòng eo và săn chắc cơ thể",
       customWishes: profile?.customWishes || "Mong muốn giảm 3cm vòng eo, hạn chế nhảy mạnh tránh đau khớp gối.",
     });
@@ -101,14 +101,14 @@ export default function AiPlanPage({
       setAnalysisProgress(100);
       const allTags = [
         ...(scheduleConfig?.limitations || ["knee_pain", "no_jumping"]),
-        ...(scheduleConfig?.equipment || ["bodyweight", "yoga_mat"]),
+        ...(scheduleConfig?.equipment || ["bodyweight"]),
       ];
       const newPlan = generateAiWeeklyPlan({
         selectedDays: scheduleConfig?.selectedDays || [1, 2, 4, 5, 7],
         duration: scheduleConfig?.duration || "30-45",
         tags: allTags,
         limitations: scheduleConfig?.limitations || ["knee_pain", "no_jumping"],
-        equipment: scheduleConfig?.equipment || ["bodyweight", "yoga_mat"],
+        equipment: scheduleConfig?.equipment || ["bodyweight"],
         fitnessGoal: profile?.fitnessGoal || "Tập trung giảm 3cm vòng eo và săn chắc cơ thể",
         customWishes: profile?.customWishes || "",
       });

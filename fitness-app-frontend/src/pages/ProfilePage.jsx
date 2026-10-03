@@ -94,12 +94,13 @@ export const PHYSICAL_LIMITATIONS = [
 // Bộ lọc điều kiện (Attribute Filter) để AI xác định dạng bài tập
 export const AVAILABLE_EQUIPMENT = [
   { id: "bodyweight", label: "Không dụng cụ" },
-  { id: "yoga_mat", label: "Thảm Yoga" },
+  { id: "dumbbell", label: "Tạ đơn" },
+  { id: "barbell", label: "Tạ đòn" },
   { id: "resistance_band", label: "Dây kháng lực" },
-  { id: "dumbbell", label: "Tạ đơn nhỏ" },
-  { id: "chair_wall", label: "Ghế tựa / Tường " },
-  { id: "kettlebell", label: "Tạ chuông" },
-  { id: "swiss_ball", label: "Bóng Yoga" },
+  { id: "cable_machine", label: "Máy cáp" },
+  { id: "machine", label: "Máy tập" },
+  { id: "smith_machine", label: "Máy Smith" },
+  { id: "trx", label: "TRX" },
 ];
 
 export default function ProfilePage({
@@ -141,7 +142,7 @@ export default function ProfilePage({
     selectedDays: scheduleConfig?.selectedDays || [1, 2, 4, 5, 7],
     duration: scheduleConfig?.duration || "30-45",
     limitations: scheduleConfig?.limitations || ["knee_pain", "no_jumping"],
-    equipment: scheduleConfig?.equipment || ["bodyweight", "yoga_mat"],
+    equipment: scheduleConfig?.equipment || ["bodyweight"],
   });
 
   // Calculations

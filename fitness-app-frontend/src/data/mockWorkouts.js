@@ -417,7 +417,7 @@ export function generateAiWeeklyPlan(config = {}) {
   const {
     selectedDays = [1, 2, 4, 5, 7], // T2, T3, T5, T6, CN
     duration = "30-45",
-    tags = ["knee_pain", "no_jumping", "bodyweight", "yoga_mat"],
+    tags = ["knee_pain", "no_jumping", "bodyweight"],
     limitations = [],
     equipment = [],
     fitnessGoal = "Tập trung giảm 3cm vòng eo và săn chắc cơ thể",

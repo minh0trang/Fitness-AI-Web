@@ -49,16 +49,16 @@ export default function App() {
     selectedDays: [1, 2, 4, 5, 7],
     duration: "30-45",
     limitations: ["knee_pain", "no_jumping"],
-    equipment: ["bodyweight", "yoga_mat"],
-    tags: ["knee_pain", "no_jumping", "bodyweight", "yoga_mat"],
+    equipment: ["bodyweight"],
+    tags: ["knee_pain", "no_jumping", "bodyweight"],
   });
   const [aiPlan, setAiPlan] = useState(() =>
     generateAiWeeklyPlan({
       selectedDays: [1, 2, 4, 5, 7],
       duration: "30-45",
       limitations: ["knee_pain", "no_jumping"],
-      equipment: ["bodyweight", "yoga_mat"],
-      tags: ["knee_pain", "no_jumping", "bodyweight", "yoga_mat"],
+      equipment: ["bodyweight"],
+      tags: ["knee_pain", "no_jumping", "bodyweight"],
       fitnessGoal: DEFAULT_USER_PROFILE.fitnessGoal,
       customWishes: DEFAULT_USER_PROFILE.customWishes,
     })
