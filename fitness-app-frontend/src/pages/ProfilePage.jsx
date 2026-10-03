@@ -83,11 +83,11 @@ export const WORKOUT_PREFERENCES = [
 // Bộ lọc loại trừ (Negative Keywords) - Đã tách "Beginner" sang mục Kinh nghiệm riêng biệt
 export const PHYSICAL_LIMITATIONS = [
   { id: "knee_pain", label: "Đau khớp gối" },
+  { id: "standing_only", label: "Bài tập đứng" },
   { id: "lower_back", label: "Đau lưng dưới" },
   { id: "wrist_pain", label: "Đau cổ tay" },
   { id: "neck_shoulder", label: "Đau cổ / Vai gáy" },
   { id: "no_jumping", label: "Không nhảy" },
-  { id: "standing_only", label: "Bài tập đứng" },
 ];
 
 // 5. Cụm: Dụng cụ sẵn có (Available Equipment)
